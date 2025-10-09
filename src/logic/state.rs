@@ -17,7 +17,12 @@ pub struct ProxyData {
 
 impl Default for ProxyData {
     fn default() -> Self {
-        Self {}
+        Self {
+            serial_datas: vec![],
+            parsed_datas: vec![],
+            times_windows: vec![],
+            times_serial: vec![],
+        }
     }
 }
 

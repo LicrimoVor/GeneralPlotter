@@ -1,3 +1,4 @@
+use super::panel::Panel;
 use crate::logic::ProxyData;
 use std::sync::mpsc;
 
@@ -17,6 +18,7 @@ impl Default for ConfigLogic {
 
 pub struct UserInterface {
     state: UserInterfaceState,
+    panel: Panel,
 }
 
 impl UserInterface {
@@ -30,6 +32,7 @@ impl UserInterface {
                 config_tx: config_tx,
                 __config: ConfigLogic::default(),
             },
+            panel: Panel::default(),
         }
     }
 
@@ -37,7 +40,18 @@ impl UserInterface {
         while let Ok(proxy_data) = self.state.proxy_data_rx.try_recv() {}
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.update();
+        egui::SidePanel::left("left")
+            .resizable(false)
+            .show(ctx, |ui| {
+                ui.label("Левая панель");
+            });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            self.panel.run(ctx, ui);
+            ui.centered_and_justified(|ui| {
+                ui.label("Полное центрирование");
+            });
+        });
     }
 }

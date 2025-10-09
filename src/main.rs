@@ -8,7 +8,7 @@ mod ui;
 
 fn main() {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+        viewport: egui::ViewportBuilder::default().with_min_inner_size([320.0, 240.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -19,5 +19,5 @@ fn main() {
             Ok(Box::new(app::AppState::default()))
         }),
     )
-    .expect("failed to start egui");
+    .expect("Приложение даже не запустилось(");
 }
