@@ -1,3 +1,5 @@
+use egui::Vec2;
+
 use super::panel::Panel;
 use crate::logic::ProxyData;
 use std::sync::mpsc;
@@ -42,16 +44,37 @@ impl UserInterface {
 
     pub fn run(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.update();
-        egui::SidePanel::left("left")
-            .resizable(false)
-            .show(ctx, |ui| {
-                ui.label("Левая панель");
-            });
+
+        let Vec2 {
+            x: width,
+            y: heigth,
+        } = ctx.screen_rect().size();
+
+        if width > 720.0 {
+            egui::SidePanel::left("left")
+                .min_width(170.0)
+                .max_width(170.0)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    let mut style = ui.style_mut().clone();
+                    style.spacing.interact_size = egui::vec2(0.0, 18.0);
+                    style.spacing.button_padding = egui::vec2(4.0, 4.0);
+                    ui.set_style(style);
+
+                    ui.add_space(8.0);
+                    self.panel.run(ctx, ui);
+                });
+        }
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.panel.run(ctx, ui);
-            ui.centered_and_justified(|ui| {
-                ui.label("Полное центрирование");
-            });
+            // self.panel.run(ctx, ui);
         });
+        if width > 1170.0 {
+            egui::SidePanel::right("rigth")
+                .min_width(200.0)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.label("Левая панель");
+                });
+        }
     }
 }

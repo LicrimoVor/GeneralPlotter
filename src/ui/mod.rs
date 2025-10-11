@@ -1,3 +1,5 @@
+mod chart;
+mod libs;
 mod panel;
 mod state;
 

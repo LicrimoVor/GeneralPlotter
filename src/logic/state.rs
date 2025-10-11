@@ -1,10 +1,17 @@
-use crate::libs::types::Value;
+use crate::libs::types::{LinierFunc, Value};
 use crate::ui::ConfigLogic;
+use egui_plot::PlotPoint;
 use std::sync::mpsc;
 
 struct LogicState {
     config_rx: mpsc::Receiver<ConfigLogic>,
     proxy_data_tx: mpsc::Sender<ProxyData>,
+
+    all_serial_data: Vec<Vec<Vec<String>>>,
+    all_parsed_data: Vec<Vec<Vec<Value>>>,
+    all_times_windows: Vec<Vec<Vec<i32>>>,
+    all_times_serial: Vec<Vec<Vec<i32>>>,
+
     __proxy_data: ProxyData,
 }
 
@@ -13,6 +20,8 @@ pub struct ProxyData {
     parsed_datas: Vec<Vec<Value>>,
     times_windows: Vec<Vec<i32>>,
     times_serial: Vec<Vec<i32>>,
+
+    all_points: Vec<Vec<Vec<PlotPoint>>>,
 }
 
 impl Default for ProxyData {
@@ -22,6 +31,8 @@ impl Default for ProxyData {
             parsed_datas: vec![],
             times_windows: vec![],
             times_serial: vec![],
+
+            all_points: vec![],
         }
     }
 }
@@ -31,6 +42,7 @@ pub struct Logic {
     // extractor: Option<dyn Any>,
     // logger: Option<dyn Any>,
     // serializer: Option<dyn Any>,
+    funcs: Vec<LinierFunc>,
 }
 
 impl Logic {
@@ -42,8 +54,13 @@ impl Logic {
             state: LogicState {
                 config_rx: config_rx,
                 proxy_data_tx: proxy_data_tx,
+                all_serial_data: vec![],
+                all_parsed_data: vec![],
+                all_times_windows: vec![],
+                all_times_serial: vec![],
                 __proxy_data: ProxyData::default(),
             },
+            funcs: vec![],
         }
     }
     fn update(&mut self) {
