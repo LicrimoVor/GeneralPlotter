@@ -1,3 +1,4 @@
+use crate::core::settings::Settings;
 use crate::logic::{Logic, SensorData};
 use crate::ui::{ConfigLogic, UserInterface};
 use eframe::App;
@@ -7,39 +8,44 @@ use std::{
 };
 pub struct AppState {
     ui: UserInterface,
+    logic_handle: thread::JoinHandle<()>,
 
-    config: ConfigLogic,
-    sensor_data: SensorData,
+    settings: Arc<Mutex<Settings>>,
+    config: Arc<Mutex<ConfigLogic>>,
+    sensor_data: Arc<Mutex<SensorData>>,
 }
 
 impl AppState {
     pub fn new(storage: Option<&dyn eframe::Storage>) -> Self {
-        let (config_tx, config_rx) = mpsc::channel::<ConfigLogic>();
-        let (sensor_tx, sensor_rx) = mpsc::channel::<SensorData>();
-        let mut config = ConfigLogic::new(storage);
-        let mut sensor_data = SensorData::new(storage);
+        let config = Arc::new(Mutex::new(ConfigLogic::new(storage)));
+        let sensor_data = Arc::new(Mutex::new(SensorData::new(storage)));
+        let settings = Arc::new(Mutex::new(Settings::new(storage)));
 
-        let mut logic = Logic::new(config_rx, sensor_tx);
-        let mut ui = UserInterface::new(sensor_rx, config_tx);
+        let mut logic = Logic::new(config.clone(), sensor_data.clone());
+        let mut ui = UserInterface::new(config.clone(), sensor_data.clone(), settings.clone());
 
-        thread::spawn(move || {
+        let logic_handle = thread::spawn(move || {
             loop {
                 logic.run();
+                std::thread::sleep(std::time::Duration::from_millis(50));
             }
         });
         Self {
             ui,
+            logic_handle,
             config,
             sensor_data,
+            settings,
         }
     }
 }
 
 impl App for AppState {
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, crate::consts::KEY_CONFIG, &self.config);
-        eframe::set_value(storage, crate::consts::KEY_DATA, &self.sensor_data);
-        // eframe::Storage::set_value(storage, crate::consts::KEY_SETTINGS, &self.);
+        let config_guard = self.config.lock().unwrap();
+        let sensor_data_guard = self.sensor_data.lock().unwrap();
+        eframe::set_value(storage, crate::core::consts::KEY_CONFIG, &*config_guard);
+        eframe::set_value(storage, crate::core::consts::KEY_DATA, &*sensor_data_guard);
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {

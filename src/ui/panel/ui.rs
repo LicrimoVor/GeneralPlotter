@@ -1,7 +1,10 @@
-use super::super::libs::button_image::button_image_14;
+use super::super::libs::button_image::button_image_18;
 use super::types::BaudRate;
-use crate::libs::{svg_img::SvgImage, types::Timer};
-use egui::Color32;
+use crate::{
+    libs::{svg_img::SvgImage, timer::Timer},
+    ui::libs::status::{Status, status_img},
+};
+use egui::{Align, Color32, Layout, Vec2};
 use serialport::{SerialPortBuilder, available_ports};
 use std::time::{Duration, Instant};
 
@@ -10,6 +13,7 @@ pub struct Panel {
     selected_port: Option<String>,
     baud_rate: BaudRate,
     opened_port: Option<SerialPortBuilder>,
+    status: Status,
 
     _timer: Timer,
 }
@@ -22,6 +26,7 @@ impl Default for Panel {
             selected_port: None,
             opened_port: None,
             baud_rate: BaudRate::Baud115200,
+            status: Status::Default,
             _timer: Timer {
                 last_update: Instant::now(),
                 interval: Duration::from_secs(30),
@@ -53,7 +58,7 @@ impl Panel {
         &self.opened_port
     }
 
-    pub fn run(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         if self._timer.is_pass_iterval() {
             self.update();
         }
@@ -62,7 +67,7 @@ impl Panel {
         ui.vertical_centered_justified(|ui| {
             ui.horizontal(|ui| {
                 egui::ComboBox::from_id_salt("port_select")
-                    .width(width - 40.0)
+                    .width(width - 32.0)
                     .selected_text(
                         self.selected_port
                             .clone()
@@ -78,8 +83,7 @@ impl Panel {
                         }
                     });
 
-                ui.add_space(4.0);
-                if button_image_14(ui, SvgImage::RELOAD, Color32::WHITE).clicked() {
+                if button_image_18(ui, SvgImage::RELOAD, Color32::WHITE).clicked() {
                     self.update()
                 };
             });
@@ -87,7 +91,7 @@ impl Panel {
 
             ui.horizontal(|ui| {
                 egui::ComboBox::from_id_salt("baud_rate_select")
-                    .width((width - 16.0) / 2.0)
+                    .width(width - 64.0)
                     .selected_text(self.baud_rate.value().to_string())
                     .show_ui(ui, |ui| {
                         for baud_rate in BaudRate::all() {
@@ -98,18 +102,13 @@ impl Panel {
                             );
                         }
                     });
-                ui.add_space(4.0);
 
                 ui.scope(|ui| {
-                    ui.set_min_size(egui::vec2((width - 16.0) / 2.0, 18.0));
+                    if self.selected_port.is_none() {
+                        ui.disable();
+                    }
 
-                    if ui
-                        .add_enabled(
-                            self.selected_port.is_some(),
-                            egui::Button::new("🔗 Подключиться"),
-                        )
-                        .clicked()
-                    {
+                    if button_image_18(ui, SvgImage::CONNECT, Color32::WHITE).clicked() {
                         let Some(selected_port) = &self.selected_port else {
                             return;
                         };
@@ -123,6 +122,7 @@ impl Panel {
                         println!("Connect to port: {}", self.selected_port.as_ref().unwrap());
                     };
                 });
+                ui.add(status_img(&self.status));
             });
         });
     }

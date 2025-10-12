@@ -1,5 +1,3 @@
-mod state;
-mod types;
+mod ui;
 
-pub use self::state::SettingsUI;
-pub use self::types::Theme;
+pub use self::ui::SettingsModal;

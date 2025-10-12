@@ -2,7 +2,7 @@
 use eframe::egui;
 
 mod app;
-mod consts;
+mod core;
 mod libs;
 mod logic;
 mod ui;

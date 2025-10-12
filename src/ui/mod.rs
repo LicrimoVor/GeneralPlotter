@@ -2,10 +2,9 @@ mod chart;
 mod libs;
 mod panel;
 mod settings;
-mod state;
 mod styles;
 mod types;
+mod ui;
 
-pub use settings::SettingsUI;
-pub use state::UserInterface;
 pub use types::ConfigLogic;
+pub use ui::UserInterface;

@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -8,18 +6,16 @@ pub enum Value {
     Number(i32),
 }
 
-pub struct Timer {
-    pub last_update: Instant,
-    pub interval: Duration,
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum Theme {
+    LIGTH,
+    DARK,
+    CUSTOM,
 }
 
-impl Timer {
-    pub fn is_pass_iterval(&mut self) -> bool {
-        if self.last_update.elapsed() >= self.interval {
-            self.last_update = Instant::now();
-            return true;
-        }
-        false
+impl Default for Theme {
+    fn default() -> Self {
+        Self::DARK
     }
 }
 

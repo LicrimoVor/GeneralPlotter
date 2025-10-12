@@ -2,16 +2,11 @@ use crate::libs::types::{LinierFunc, Value};
 use crate::logic::SensorData;
 use crate::ui::ConfigLogic;
 use egui_plot::PlotPoint;
-use std::sync::mpsc;
+use std::sync::{Arc, Mutex, mpsc};
 
 struct LogicState {
-    config_rx: mpsc::Receiver<ConfigLogic>,
-    sensor_data_tx: mpsc::Sender<SensorData>,
-
-    all_serial_data: Vec<Vec<Vec<String>>>,
-    all_parsed_data: Vec<Vec<Vec<Value>>>,
-    all_times_windows: Vec<Vec<Vec<i32>>>,
-    all_times_serial: Vec<Vec<Vec<i32>>>,
+    config: Arc<Mutex<ConfigLogic>>,
+    sensor_data: Arc<Mutex<SensorData>>,
 }
 
 pub struct Logic {
@@ -23,29 +18,23 @@ pub struct Logic {
 }
 
 impl Logic {
-    pub fn new(
-        config_rx: mpsc::Receiver<ConfigLogic>,
-        proxy_data_tx: mpsc::Sender<SensorData>,
-    ) -> Self {
+    pub fn new(config: Arc<Mutex<ConfigLogic>>, sensor_data: Arc<Mutex<SensorData>>) -> Self {
         Self {
             state: LogicState {
-                config_rx: config_rx,
-                sensor_data_tx: proxy_data_tx,
-                all_serial_data: vec![],
-                all_parsed_data: vec![],
-                all_times_windows: vec![],
-                all_times_serial: vec![],
+                config,
+                sensor_data,
             },
             funcs: vec![],
         }
     }
     fn update(&mut self) {
-        while let Ok(config) = self.state.config_rx.try_recv() {}
+        // while let Ok(config) = self.state.config.lock() {}
+        // let sensor_data = self.state.sensor_data.lock().unwrap();
     }
 
     pub fn run(&mut self) {
         self.update();
 
-        println!("run logic");
+        // println!("run logic");
     }
 }

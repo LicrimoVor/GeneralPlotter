@@ -6,8 +6,8 @@ fn base_style_from(ctx: &egui::Context) -> egui::Style {
     let mut style = (*ctx.style()).clone();
 
     // spacing
-    style.spacing.item_spacing = Vec2::new(8.0, 6.0); // межстрочный / между элементами
-    style.spacing.button_padding = Vec2::new(8.0, 6.0);
+    style.spacing.item_spacing = Vec2::new(4.0, 4.0); // межстрочный / между элементами
+    style.spacing.button_padding = Vec2::new(4.0, 4.0);
 
     // немного более мягкие углы
     style.visuals.window_corner_radius = CornerRadius::from(6.0);
@@ -21,7 +21,7 @@ fn base_style_from(ctx: &egui::Context) -> egui::Style {
         (egui::TextStyle::Body, egui::FontId::proportional(14.0)),
         (egui::TextStyle::Monospace, egui::FontId::monospace(13.0)),
         (egui::TextStyle::Button, egui::FontId::proportional(14.0)),
-        (egui::TextStyle::Small, egui::FontId::proportional(11.0)),
+        (egui::TextStyle::Small, egui::FontId::proportional(10.0)),
     ]
     .into();
     style
