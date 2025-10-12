@@ -2,6 +2,7 @@
 use eframe::egui;
 
 mod app;
+mod consts;
 mod libs;
 mod logic;
 mod ui;
@@ -16,7 +17,7 @@ fn main() {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(app::AppState::default()))
+            Ok(Box::new(app::AppState::new(cc.storage)))
         }),
     )
     .expect("Приложение даже не запустилось(");

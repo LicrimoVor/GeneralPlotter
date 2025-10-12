@@ -1,54 +1,53 @@
-use egui::Vec2;
-
 use super::panel::Panel;
-use crate::logic::ProxyData;
+use super::types::ConfigLogic;
+use crate::libs::types::Value;
+use crate::logic::SensorData;
+use egui::Vec2;
+use egui_plot::PlotPoint;
 use std::sync::mpsc;
 
 struct UserInterfaceState {
-    proxy_data_rx: mpsc::Receiver<ProxyData>,
-    config_tx: mpsc::Sender<ConfigLogic>,
-    __config: ConfigLogic,
-}
-
-pub struct ConfigLogic {}
-
-impl Default for ConfigLogic {
-    fn default() -> Self {
-        Self {}
-    }
+    serial_datas: Vec<Vec<String>>,
+    parsed_datas: Vec<Vec<Value>>,
+    times_windows: Vec<Vec<i32>>,
+    times_serial: Vec<Vec<i32>>,
+    all_points: Vec<Vec<PlotPoint>>,
 }
 
 pub struct UserInterface {
-    state: UserInterfaceState,
+    sensor_rx: mpsc::Receiver<SensorData>,
+    config_tx: mpsc::Sender<ConfigLogic>,
+
+    // state: UserInterfaceState,
     panel: Panel,
 }
 
 impl UserInterface {
     pub fn new(
-        proxy_data_rx: mpsc::Receiver<ProxyData>,
+        sensor_rx: mpsc::Receiver<SensorData>,
         config_tx: mpsc::Sender<ConfigLogic>,
     ) -> Self {
         Self {
-            state: UserInterfaceState {
-                proxy_data_rx: proxy_data_rx,
-                config_tx: config_tx,
-                __config: ConfigLogic::default(),
-            },
+            sensor_rx: sensor_rx,
+            config_tx: config_tx,
             panel: Panel::default(),
         }
     }
 
     fn update(&mut self) {
-        while let Ok(proxy_data) = self.state.proxy_data_rx.try_recv() {}
+        // while let Ok(proxy_data) = self.state.proxy_data_rx.try_recv() {}
     }
 
     pub fn run(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.update();
 
+        super::styles::apply_dark_theme(ctx);
+        // super::styles::apply_light_theme(ctx);
+
         let Vec2 {
             x: width,
             y: heigth,
-        } = ctx.screen_rect().size();
+        } = ctx.content_rect().size();
 
         if width > 720.0 {
             egui::SidePanel::left("left")

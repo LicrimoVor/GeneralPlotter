@@ -1,5 +1,8 @@
 use std::time::{Duration, Instant};
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Value {
     Text(String),
     Number(i32),

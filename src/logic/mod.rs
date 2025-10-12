@@ -3,6 +3,7 @@ mod logger;
 mod serializer;
 mod state;
 mod traits;
+mod types;
 
 pub use state::Logic;
-pub use state::ProxyData;
+pub use types::SensorData;

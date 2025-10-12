@@ -5,9 +5,10 @@ edition = "2024"
 
 [dependencies]
 
-egui = { version = "0.32.3", features = ["color-hex"] }
-egui_extras = { version = "0.32.3", features = ["image", "svg"] }
-eframe = "0.32.3"
-egui_plot = "0.33.0"
+eframe = { version = "0.33.0", features = ["ron", "serde"] }
+egui = { version = "0.33.0", features = ["color-hex", "ron"] }
+egui_extras = { version = "0.33.0", features = ["image", "svg"] }
+egui_plot = "0.34.0"
 serialport = "4.8.1"
 image = "0.25.8"
+serde = "1.0"
