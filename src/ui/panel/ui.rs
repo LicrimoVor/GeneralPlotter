@@ -2,11 +2,14 @@ use super::super::libs::button_image::button_image_18;
 use super::types::BaudRate;
 use crate::{
     libs::{svg_img::SvgImage, timer::Timer},
-    ui::libs::status::{Status, status_img},
+    ui::{
+        libs::status::{Status, status_img},
+        panel::utils::get_ports,
+    },
 };
-use egui::{Align, Color32, Layout, Vec2};
-use serialport::{SerialPortBuilder, available_ports};
-use std::time::{Duration, Instant};
+use egui::Widget;
+use serialport::SerialPortBuilder;
+use web_time::{Duration, Instant};
 
 pub struct Panel {
     ports: Vec<serialport::SerialPortInfo>,
@@ -20,7 +23,8 @@ pub struct Panel {
 
 impl Default for Panel {
     fn default() -> Self {
-        let ports = available_ports().unwrap();
+        let ports = get_ports();
+
         Self {
             ports,
             selected_port: None,
@@ -29,7 +33,7 @@ impl Default for Panel {
             status: Status::Default,
             _timer: Timer {
                 last_update: Instant::now(),
-                interval: Duration::from_secs(30),
+                interval: Duration::from_secs(5),
             },
         }
     }
@@ -37,7 +41,8 @@ impl Default for Panel {
 
 impl Panel {
     fn update(&mut self) {
-        let now_ports = available_ports().unwrap();
+        let now_ports = get_ports();
+
         if let Some(selected_port) = &self.selected_port {
             let selected_port = self.ports.iter().find(|a| a.port_name == *selected_port);
         }
@@ -74,6 +79,9 @@ impl Panel {
                             .unwrap_or_else(|| "Выберите порт".to_string()),
                     )
                     .show_ui(ui, |ui| {
+                        if self.ports.len() == 0 {
+                            ui.label("Нет портов");
+                        }
                         for port in &self.ports {
                             ui.selectable_value(
                                 &mut self.selected_port,
@@ -83,7 +91,7 @@ impl Panel {
                         }
                     });
 
-                if button_image_18(ui, SvgImage::RELOAD, Color32::WHITE).clicked() {
+                if button_image_18(ui, SvgImage::RELOAD, None).clicked() {
                     self.update()
                 };
             });
@@ -108,7 +116,7 @@ impl Panel {
                         ui.disable();
                     }
 
-                    if button_image_18(ui, SvgImage::CONNECT, Color32::WHITE).clicked() {
+                    if button_image_18(ui, SvgImage::CONNECT, None).clicked() {
                         let Some(selected_port) = &self.selected_port else {
                             return;
                         };
@@ -122,7 +130,9 @@ impl Panel {
                         println!("Connect to port: {}", self.selected_port.as_ref().unwrap());
                     };
                 });
-                ui.add(status_img(&self.status));
+                ui.add_space(2.0);
+                status_img(&self.status, ui).ui(ui);
+                // ui.add(status_img(&self.status).ui(ui));
             });
         });
     }

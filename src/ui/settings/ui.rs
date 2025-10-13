@@ -24,7 +24,7 @@ impl SettingsModal {
     pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         let Self { _is_open, settings } = self;
 
-        if button_image_18(ui, SvgImage::SETTINGS, Color32::WHITE).clicked() {
+        if button_image_18(ui, SvgImage::SETTINGS, None).clicked() {
             *_is_open = true;
         }
 

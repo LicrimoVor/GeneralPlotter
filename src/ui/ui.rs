@@ -37,6 +37,7 @@ impl UserInterface {
 
     pub fn run(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.update();
+        // ctx.set_debug_on_hover(true);
 
         {
             let settings = self.settings.lock().unwrap();
@@ -63,9 +64,6 @@ impl UserInterface {
                     self.settings_modal.show(ctx, ui);
                 });
         }
-        egui::CentralPanel::default().show(ctx, |ui| {
-            // self.panel.run(ctx, ui);
-        });
         if width > 1170.0 {
             egui::SidePanel::right("rigth")
                 .min_width(200.0)
@@ -75,5 +73,8 @@ impl UserInterface {
                     ui.label("Левая панель");
                 });
         }
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // self.panel.run(ctx, ui);
+        });
     }
 }

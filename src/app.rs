@@ -6,10 +6,11 @@ use std::{
     sync::{Arc, Mutex, mpsc},
     thread,
 };
+use wasm_bindgen_futures::spawn_local;
+
 pub struct AppState {
     ui: UserInterface,
-    logic_handle: thread::JoinHandle<()>,
-
+    // logic_handle: thread::JoinHandle<()>,
     settings: Arc<Mutex<Settings>>,
     config: Arc<Mutex<ConfigLogic>>,
     sensor_data: Arc<Mutex<SensorData>>,
@@ -24,15 +25,34 @@ impl AppState {
         let mut logic = Logic::new(config.clone(), sensor_data.clone());
         let mut ui = UserInterface::new(config.clone(), sensor_data.clone(), settings.clone());
 
-        let logic_handle = thread::spawn(move || {
-            loop {
-                logic.run();
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            }
-        });
+        // let logic_handle = thread::spawn(move || {
+        //     loop {
+        //         logic.run();
+        //         std::thread::sleep(std::time::Duration::from_millis(50));
+        //     }
+        // });
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            std::thread::spawn(move || {
+                loop {
+                    logic.run();
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+            });
+        }
+
+        // #[cfg(target_arch = "wasm32")]
+        // {
+        //     spawn_local(async move {
+        //         loop {
+        //             logic.run();
+        //         }
+        //     });
+        // }
         Self {
             ui,
-            logic_handle,
+            // logic_handle,
             config,
             sensor_data,
             settings,

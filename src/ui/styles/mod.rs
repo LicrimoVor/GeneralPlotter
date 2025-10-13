@@ -1,4 +1,4 @@
-use egui::{self, Color32, CornerRadius, FontData, FontDefinitions, FontFamily, Style, Vec2};
+use egui::{self, CornerRadius, FontData, FontDefinitions, FontFamily, Style, Vec2};
 mod dark;
 mod ligth;
 
@@ -6,7 +6,7 @@ fn base_style_from(ctx: &egui::Context) -> egui::Style {
     let mut style = (*ctx.style()).clone();
 
     // spacing
-    style.spacing.item_spacing = Vec2::new(4.0, 4.0); // межстрочный / между элементами
+    style.spacing.item_spacing = Vec2::new(4.0, 4.0);
     style.spacing.button_padding = Vec2::new(4.0, 4.0);
 
     // немного более мягкие углы
