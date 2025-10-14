@@ -10,17 +10,26 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 [dependencies]
 eframe = { version = "0.33.0", features = ["ron", "serde"] }
 egui = { version = "0.33.0", features = ["color-hex", "ron"] }
-egui_extras = { version = "0.33.0", features = ["image", "svg"] }
+egui_extras = { version = "0.33.0", features = ["image", "svg", "all_loaders"] }
 egui_plot = "0.34.0"
-serialport = "4.8.1"
-image = "0.25.8"
 serde = "1.0"
-web-time = "1.1"
+image = "0.25.8"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4.54"
+tokio = { version = "1.38", features = ["sync", "macros", "rt"] }
+futures = "0.3"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+serialport = "4.8.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen-futures = "0.4.54"
-web-sys = "0.3.70"
-gloo-timers = "0.3.0"
-wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6.5"
+web-sys = { version = "0.3", features = [
+    "ReadableStream",
+    "WritableStream",
+    "Navigator",
+    "Window",
+    "console",
+] }
+web-time = "1.1"
 js-sys = "0.3"

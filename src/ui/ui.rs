@@ -1,7 +1,11 @@
 use super::panel::Panel;
 use super::settings::SettingsModal;
 use super::types::ConfigLogic;
-use crate::{core::settings::Settings, libs::types::Theme, logic::SensorData};
+use crate::{
+    core::settings::Settings,
+    libs::{svg_img::SvgImage, types::Theme},
+    logic::SensorData,
+};
 use egui::Vec2;
 use std::sync::{Arc, Mutex};
 
@@ -36,6 +40,7 @@ impl UserInterface {
     }
 
     pub fn run(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui_extras::install_image_loaders(ctx);
         self.update();
         // ctx.set_debug_on_hover(true);
 
@@ -75,6 +80,9 @@ impl UserInterface {
         }
         egui::CentralPanel::default().show(ctx, |ui| {
             // self.panel.run(ctx, ui);
+            ui.add(SvgImage::PEACE.get_image());
+
+            ui.add(SvgImage::PEACE.get_image());
         });
     }
 }

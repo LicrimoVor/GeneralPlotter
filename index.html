@@ -15,6 +15,12 @@
 				height: 100%;
 			}
 		</style>
+		<link
+			data-trunk
+			rel="copy-file"
+			href="assets/connect.svg"
+			data-target-path="assets"
+		/>
 	</head>
 	<body>
 		<canvas id="canvas_id"></canvas>
@@ -45,4 +51,12 @@
 
 		run();
 	</script> -->
+	<script>
+		// We disable caching during development so that we always view the latest version.
+		//if ("serviceWorker" in navigator && window.location.hash !== "#dev") {
+		//	window.addEventListener("load", function () {
+		//		navigator.serviceWorker.register("sw.js");
+		//	});
+		//}
+	</script>
 </html>

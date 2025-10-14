@@ -8,6 +8,7 @@ pub enum SvgImage {
     CIRCLE_X,
     CIRCLE,
     SETTINGS,
+    PLUS,
 }
 
 impl SvgImage {
@@ -20,10 +21,11 @@ impl SvgImage {
             SvgImage::CIRCLE_CHECK => egui::include_image!("../../assets/circle-dashed-check.svg"),
             SvgImage::CIRCLE_X => egui::include_image!("../../assets/circle-dashed-x.svg"),
             SvgImage::SETTINGS => egui::include_image!("../../assets/settings.svg"),
+            SvgImage::PLUS => egui::include_image!("../../assets/plus.svg"),
         }
     }
 
     pub fn get_image(self) -> Image<'static> {
-        egui::Image::new(self.get_source()).fit_to_original_size(1.0)
+        egui::Image::new(self.get_source())
     }
 }

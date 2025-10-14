@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 #[serde(default)]
 #[derive(Default)]
 pub struct SensorData {
-    pub serial_datas: Vec<Vec<String>>,
-    pub parsed_datas: Vec<Vec<Value>>,
-    pub times_windows: Vec<Vec<i32>>,
-    pub times_serial: Vec<Vec<i32>>,
+    pub serial_datas: Vec<String>,
+    pub parsed_datas: Vec<Value>,
+    pub times_windows: Vec<i32>,
+    pub times_serial: Vec<i32>,
 
     #[serde(skip)]
-    pub all_points: Vec<Vec<Vec<[f64; 2]>>>,
+    pub all_points: Vec<[f64; 2]>,
 }
 
 impl SensorData {

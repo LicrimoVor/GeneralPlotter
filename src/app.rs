@@ -6,7 +6,6 @@ use std::{
     sync::{Arc, Mutex, mpsc},
     thread,
 };
-use wasm_bindgen_futures::spawn_local;
 
 pub struct AppState {
     ui: UserInterface,

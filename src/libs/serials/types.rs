@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BaudRate {
     Baud1200 = 1200,
     Baud2400 = 2400,
