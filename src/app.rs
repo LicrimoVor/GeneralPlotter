@@ -1,15 +1,13 @@
 use crate::core::settings::Settings;
+use crate::libs::serials::{Serial, SerialEvent};
+use crate::libs::sleep::sleep_ms;
 use crate::logic::{Logic, SensorData};
 use crate::ui::{ConfigLogic, UserInterface};
 use eframe::App;
-use std::{
-    sync::{Arc, Mutex, mpsc},
-    thread,
-};
+use std::sync::{Arc, Mutex};
 
 pub struct AppState {
     ui: UserInterface,
-    // logic_handle: thread::JoinHandle<()>,
     settings: Arc<Mutex<Settings>>,
     config: Arc<Mutex<ConfigLogic>>,
     sensor_data: Arc<Mutex<SensorData>>,
@@ -21,15 +19,15 @@ impl AppState {
         let sensor_data = Arc::new(Mutex::new(SensorData::new(storage)));
         let settings = Arc::new(Mutex::new(Settings::new(storage)));
 
+        let mut serial = Serial::new();
+        let (mut serial_rx, mut serial_tx) = serial.subscribe();
         let mut logic = Logic::new(config.clone(), sensor_data.clone());
-        let mut ui = UserInterface::new(config.clone(), sensor_data.clone(), settings.clone());
-
-        // let logic_handle = thread::spawn(move || {
-        //     loop {
-        //         logic.run();
-        //         std::thread::sleep(std::time::Duration::from_millis(50));
-        //     }
-        // });
+        let ui = UserInterface::new(
+            config.clone(),
+            sensor_data.clone(),
+            settings.clone(),
+            &mut serial,
+        );
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -41,17 +39,40 @@ impl AppState {
             });
         }
 
-        // #[cfg(target_arch = "wasm32")]
-        // {
-        //     spawn_local(async move {
-        //         loop {
-        //             logic.run();
-        //         }
-        //     });
-        // }
+        #[cfg(target_arch = "wasm32")]
+        {
+            use web_sys::console;
+            wasm_bindgen_futures::spawn_local(async move {
+                loop {
+                    sleep_ms(50).await;
+                    let event = serial_rx.try_next().ok().flatten();
+                    if event.is_none() {
+                        continue;
+                    }
+
+                    let event = event.unwrap();
+                    match event {
+                        SerialEvent::Data(result) => {
+                            if let Ok(data) = result {
+                                for val in data {
+                                    logic.run();
+                                    console::log_1(&format!("{:?}", val).as_str().into());
+                                }
+                            }
+                        }
+                        SerialEvent::Opened(result) => {
+                            if let Err(e) = result {
+                                console::log_1(&e.as_str().into());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            });
+        }
+        serial.spawn_loop();
         Self {
             ui,
-            // logic_handle,
             config,
             sensor_data,
             settings,

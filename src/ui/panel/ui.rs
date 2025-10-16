@@ -1,53 +1,57 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use super::super::libs::button_image::button_image_18;
-use crate::libs::serials::{BaudRate, Serial, SerialDevice};
+use crate::libs::serials::{BaudRate, SerialAction, SerialDevice, SerialEvent};
 use crate::{
     libs::{svg_img::SvgImage, timer::Timer},
     ui::libs::status::{Status, status_img},
 };
-use egui::Widget;
-#[cfg(target_arch = "wasm32")]
+use egui::{Vec2, Widget};
 use futures::channel::mpsc;
-#[cfg(target_arch = "wasm32")]
-use web_time::{Duration, Instant};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Panel {
-    serial: Rc<RefCell<Serial>>,
+    ports: Vec<SerialDevice>,
     selected_port: Option<SerialDevice>,
     baud_rate: BaudRate,
     status: Status,
+    is_opened: bool,
 
+    serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
+    serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
+
+    _angle_loader: f32,
     _timer: Timer,
-    #[cfg(target_arch = "wasm32")]
-    reader: Option<mpsc::UnboundedReceiver<String>>,
 }
 
-impl Default for Panel {
-    fn default() -> Self {
-        let serial = Rc::new(RefCell::new(Serial::new()));
-        serial.borrow_mut().update_ports(serial.clone());
-
-        Self {
-            serial: serial.clone(),
+impl Panel {
+    pub fn new(
+        serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
+        serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
+    ) -> Self {
+        let mut panel = Self {
+            ports: vec![],
             selected_port: None,
             status: Status::Default,
             baud_rate: BaudRate::Baud9600,
-            _timer: Timer {
-                last_update: Instant::now(),
-                interval: Duration::from_secs(5),
-            },
+            is_opened: false,
 
-            #[cfg(target_arch = "wasm32")]
-            reader: None,
-        }
+            serial_rx,
+            serial_tx,
+
+            _angle_loader: 0.0,
+            _timer: Timer::default(),
+        };
+        panel.update_ports();
+        panel
     }
 }
 
 impl Panel {
     fn update_ports(&mut self) {
-        self.serial.borrow_mut().update_ports(self.serial.clone());
+        let _ = self
+            .serial_tx
+            .borrow_mut()
+            .try_send(SerialAction::UpdatePorts);
     }
 
     fn update(&mut self) {
@@ -55,20 +59,38 @@ impl Panel {
         self.update_ports();
     }
 
-    fn connect(&mut self) {
-        let Some(selected_port) = &self.selected_port else {
+    fn serial_read(&mut self) {
+        let event = self.serial_rx.borrow_mut().try_next().ok().flatten();
+        if event.is_none() {
             return;
-        };
-        let ports = &self.serial.borrow().ports;
-        let Some(port) = ports.iter().find(|a| a.name == *selected_port.name) else {
-            return;
-        };
+        }
+        let event = event.unwrap();
+        match event {
+            SerialEvent::Opened(result) => match result {
+                Ok(true) => self.status = Status::Ok,
+                Ok(false) => self.status = Status::Default,
+                Err(_) => self.status = Status::Error,
+                _ => {}
+            },
+            SerialEvent::Loading(is_loading) => match is_loading {
+                Ok(true) => self.status = Status::isLoading,
+                Err(_) => self.status = Status::Error,
+                _ => {}
+            },
+            SerialEvent::Ports(result) => {
+                if let Ok(ports) = result {
+                    self.ports = ports;
+                }
+            }
+            _ => {}
+        }
     }
 
     pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         if self._timer.is_pass_iterval() {
             self.update();
         }
+        self.serial_read();
 
         let width = ui.available_width();
 
@@ -82,10 +104,10 @@ impl Panel {
                             .map_or("Выберите порт".to_string(), |a| a.name),
                     )
                     .show_ui(ui, |ui| {
-                        if self.serial.borrow().ports.len() == 0 {
+                        if self.ports.len() == 0 {
                             ui.label("Нет портов");
                         }
-                        for port in &self.serial.borrow().ports {
+                        for port in &self.ports {
                             ui.selectable_value(
                                 &mut self.selected_port,
                                 Some(port.clone()),
@@ -123,31 +145,35 @@ impl Panel {
                         ui.disable();
                     }
 
-                    if button_image_18(ui, SvgImage::CONNECT, None).clicked() {
-                        self.reader = self.serial.clone().borrow_mut().open_port(
-                            self.selected_port.as_ref().unwrap().id,
-                            self.baud_rate.clone(),
-                            self.serial.clone(),
-                        );
-                    };
+                    if self.status == Status::Ok {
+                        if button_image_18(ui, SvgImage::DISCONNECT, None).clicked() {
+                            let _ = self
+                                .serial_tx
+                                .borrow_mut()
+                                .try_send(SerialAction::ClosePort);
+                        };
+                    } else {
+                        if button_image_18(ui, SvgImage::CONNECT, None).clicked() {
+                            let _ = self
+                                .serial_tx
+                                .borrow_mut()
+                                .try_send(SerialAction::OpenPort((
+                                    self.selected_port.as_ref().unwrap().clone(),
+                                    self.baud_rate,
+                                )));
+                        };
+                    }
                 });
 
-                if self.reader.is_some() {
-                    while let Some(line) = self
-                        .reader
-                        .as_mut()
-                        .unwrap()
-                        .try_next()
-                        .inspect_err(|a| {
-                            web_sys::console::log_1(&a.to_string().into());
-                        })
-                        .unwrap()
-                    {
-                        web_sys::console::log_1(&format!("Получено: {}", line).into());
-                    }
-                }
                 ui.add_space(2.0);
-                status_img(&self.status, ui).ui(ui);
+                if self.status == Status::isLoading {
+                    self._angle_loader += 0.03;
+                    status_img(&self.status, ui)
+                        .rotate(self._angle_loader, Vec2::splat(0.5))
+                        .ui(ui);
+                } else {
+                    status_img(&self.status, ui).ui(ui);
+                }
                 // ui.add(status_img(&self.status).ui(ui));
             });
         });

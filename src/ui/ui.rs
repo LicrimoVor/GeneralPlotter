@@ -3,17 +3,30 @@ use super::settings::SettingsModal;
 use super::types::ConfigLogic;
 use crate::{
     core::settings::Settings,
-    libs::{svg_img::SvgImage, types::Theme},
+    libs::{
+        serials::{Serial, SerialAction, SerialEvent},
+        svg_img::SvgImage,
+        types::Theme,
+    },
     logic::SensorData,
 };
 use egui::Vec2;
-use std::sync::{Arc, Mutex};
+use futures::channel::mpsc;
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 pub struct UserInterface {
     // data
     config: Arc<Mutex<ConfigLogic>>,
     sensor_data: Arc<Mutex<SensorData>>,
     settings: Arc<Mutex<Settings>>,
+
+    // serial
+    serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
+    serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
 
     // ui
     settings_modal: SettingsModal,
@@ -25,13 +38,22 @@ impl UserInterface {
         config: Arc<Mutex<ConfigLogic>>,
         sensor_data: Arc<Mutex<SensorData>>,
         settings: Arc<Mutex<Settings>>,
+        serial: &mut Serial,
     ) -> Self {
+        let (mut serial_rx, mut serial_tx) = serial.subscribe();
+        let serial_rx = Rc::new(RefCell::new(serial_rx));
+        let serial_tx = Rc::new(RefCell::new(serial_tx));
+
         Self {
             config,
             sensor_data,
             settings_modal: SettingsModal::new(settings.clone()),
             settings,
-            panel: Panel::default(),
+
+            serial_rx: serial_rx.clone(),
+            serial_tx: serial_tx.clone(),
+
+            panel: Panel::new(serial_rx, serial_tx),
         }
     }
 

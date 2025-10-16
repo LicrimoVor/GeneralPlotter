@@ -1,3 +1,6 @@
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::{Duration, Instant};
+#[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
 
 pub struct Timer {
@@ -6,6 +9,13 @@ pub struct Timer {
 }
 
 impl Timer {
+    pub fn default() -> Self {
+        Self {
+            last_update: Instant::now(),
+            interval: Duration::from_secs(5),
+        }
+    }
+
     pub fn is_pass_iterval(&mut self) -> bool {
         if self.last_update.elapsed() >= self.interval {
             self.last_update = Instant::now();

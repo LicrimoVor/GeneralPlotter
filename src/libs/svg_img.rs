@@ -4,11 +4,14 @@ pub enum SvgImage {
     RELOAD,
     PEACE,
     CONNECT,
+    DISCONNECT,
     CIRCLE_CHECK,
     CIRCLE_X,
     CIRCLE,
+    CIRCLE_LOADER,
     SETTINGS,
     PLUS,
+    NONE,
 }
 
 impl SvgImage {
@@ -17,11 +20,14 @@ impl SvgImage {
             SvgImage::RELOAD => egui::include_image!("../../assets/reload.svg"),
             SvgImage::PEACE => egui::include_image!("../../assets/peace.svg"),
             SvgImage::CONNECT => egui::include_image!("../../assets/connect.svg"),
+            SvgImage::DISCONNECT => egui::include_image!("../../assets/disconnect.svg"),
             SvgImage::CIRCLE => egui::include_image!("../../assets/circle-dashed.svg"),
+            SvgImage::CIRCLE_LOADER => egui::include_image!("../../assets/circle-loader.svg"),
             SvgImage::CIRCLE_CHECK => egui::include_image!("../../assets/circle-dashed-check.svg"),
             SvgImage::CIRCLE_X => egui::include_image!("../../assets/circle-dashed-x.svg"),
             SvgImage::SETTINGS => egui::include_image!("../../assets/settings.svg"),
             SvgImage::PLUS => egui::include_image!("../../assets/plus.svg"),
+            SvgImage::NONE => egui::include_image!("../../assets/none.svg"),
         }
     }
 

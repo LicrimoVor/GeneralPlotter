@@ -1,14 +1,12 @@
 use super::SerialDevice;
-use super::libs::SerialLineReader;
 use super::types::BaudRate;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_impl {
+    use crate::libs::serials::SerialEvent;
 
     use super::*;
-    use futures::channel::mpsc::{self, UnboundedReceiver};
+    use eframe::Result;
     use js_sys::Reflect;
     use js_sys::{Array, Promise, Uint8Array};
     use wasm_bindgen::JsCast;
@@ -18,9 +16,18 @@ pub mod wasm_impl {
 
     #[wasm_bindgen]
     extern "C" {
-        #[wasm_bindgen(js_namespace = navigator, js_name = serial)]
-        pub static SERIAL: Serial;
+        #[wasm_bindgen(js_name = ReadableStreamDefaultReader)]
+        pub type ReadableStreamDefaultReader;
 
+        #[wasm_bindgen(method)]
+        pub fn read(this: &ReadableStreamDefaultReader) -> js_sys::Promise;
+
+        #[wasm_bindgen(method)]
+        pub fn releaseLock(this: &ReadableStreamDefaultReader);
+    }
+
+    #[wasm_bindgen]
+    extern "C" {
         #[wasm_bindgen(js_name = Serial)]
         pub type Serial;
 
@@ -52,159 +59,197 @@ pub mod wasm_impl {
         pub fn getInfo(this: &SerialPort) -> JsValue;
     }
 
+    pub fn get_navigator_serial() -> Option<Serial> {
+        let navigator = web_sys::window()?.navigator();
+        let serial_value = Reflect::get(&navigator, &JsValue::from_str("serial")).ok()?;
+        serial_value.dyn_into::<Serial>().ok()
+    }
+
     impl super::super::Serial {
-        pub fn update_ports(&mut self, self_rc: Rc<RefCell<Self>>) {
-            self.loading = true;
+        pub async fn update_ports(&mut self) -> SerialEvent {
+            let mut devices = vec![];
+            let serial = get_navigator_serial().unwrap();
+            let _ = JsFuture::from(serial.requestPort().unwrap()).await;
+            let ports_val = JsFuture::from(serial.get_ports().unwrap()).await.unwrap();
+            let arr = Array::from(&ports_val);
+            let ports_js: Vec<SerialPort> = arr
+                .iter()
+                .map(|a| a.unchecked_into::<SerialPort>())
+                .collect();
 
-            wasm_bindgen_futures::spawn_local(async move {
-                let mut devices = vec![];
+            for (i, js_port) in arr.iter().enumerate() {
+                if let Ok(port) = js_port.dyn_into::<SerialPort>() {
+                    let info_val = port.getInfo();
+                    let usb_vendor_id = Reflect::get(&info_val, &JsValue::from_str("usbVendorId"))
+                        .ok()
+                        .and_then(|v| v.as_f64().map(|n| n as u32));
 
-                let _ = JsFuture::from(SERIAL.requestPort().unwrap()).await;
-                let ports_val = JsFuture::from(SERIAL.get_ports().unwrap()).await.unwrap();
-                let arr = Array::from(&ports_val);
-                let ports_js: Vec<SerialPort> = arr
-                    .iter()
-                    .map(|a| a.unchecked_into::<SerialPort>())
+                    let usb_product_id =
+                        Reflect::get(&info_val, &JsValue::from_str("usbProductId"))
+                            .ok()
+                            .and_then(|v| v.as_f64().map(|n| n as u32));
+
+                    let name: String = format!(
+                        "{} - {}:{}",
+                        i,
+                        usb_vendor_id.unwrap_or(0),
+                        usb_product_id.unwrap_or(0)
+                    )
+                    .chars()
+                    .take(15)
                     .collect();
 
-                for (i, js_port) in arr.iter().enumerate() {
-                    if let Ok(port) = js_port.dyn_into::<SerialPort>() {
-                        let info_val = port.getInfo();
-                        let usb_vendor_id =
-                            Reflect::get(&info_val, &JsValue::from_str("usbVendorId"))
-                                .ok()
-                                .and_then(|v| v.as_f64().map(|n| n as u32));
-
-                        let usb_product_id =
-                            Reflect::get(&info_val, &JsValue::from_str("usbProductId"))
-                                .ok()
-                                .and_then(|v| v.as_f64().map(|n| n as u32));
-
-                        let name: String = format!(
-                            "{} - {}:{}",
-                            i,
-                            usb_vendor_id.unwrap_or(0),
-                            usb_product_id.unwrap_or(0)
-                        )
-                        .chars()
-                        .take(15)
-                        .collect();
-
-                        devices.push(SerialDevice {
-                            name: name.clone(),
-                            id: i,
-                        });
-                        console::log_1(&format!("Порт {}", name).into());
-                    }
+                    devices.push(SerialDevice {
+                        name: name.clone(),
+                        id: i,
+                    });
+                    console::log_1(&format!("Порт {}", name).into());
                 }
-                let mut s = self_rc.borrow_mut();
-
-                console::log(&arr);
-                console::log_1(&"Порты обновлены".into());
-                s.ports = devices;
-                s.__ports = ports_js;
-                s.loading = false;
-            });
-        }
-
-        pub fn open_port(
-            &mut self,
-            id: usize,
-            baud_rate: BaudRate,
-            self_rc: Rc<RefCell<Self>>,
-        ) -> Option<UnboundedReceiver<String>> {
-            let baud_rate = baud_rate.value();
-            let (tx, mut rx) = mpsc::unbounded::<String>();
-
-            if self.opened_port.is_some() {
-                console::log_1(&"Порт уже открыт".into());
-                return None;
             }
 
-            wasm_bindgen_futures::spawn_local(async move {
-                let mut self_clone = self_rc.borrow_mut();
-                let port = self_clone.__ports.get(id).unwrap();
-                let options = js_sys::Object::new();
-                let _ = Reflect::set(
-                    &options,
-                    &JsValue::from_str("baudRate"),
-                    &JsValue::from_f64(baud_rate as f64),
-                );
-                match port.open(&JsValue::from(options)) {
-                    Ok(p) => {
-                        JsFuture::from(p).await.unwrap();
-                        console::log_1(&"Порт открыт".into());
-                    }
-                    Err(er) => {
-                        console::log_1(&"Ошибка открытия порта".into());
-                        return;
-                    }
-                };
-
-                let reader = js_sys::Reflect::get(port, &JsValue::from_str("readable"))
-                    .unwrap()
-                    .unchecked_into::<web_sys::ReadableStream>();
-
-                self_clone.opened_port = Some(self_clone.ports.get(id).unwrap().clone());
-                self_clone.reader = Some(SerialLineReader::new(reader.get_reader(), tx));
-                let reader_obj = reader.get_reader();
-                // let read_promise = Reflect::get(&reader_obj, &JsValue::from_str("read"))
-                //     .unwrap()
-                //     .dyn_into::<js_sys::Function>()
-                //     .unwrap()
-                //     .call0(&reader_obj)
-                //     .unwrap();
-                // let result = JsFuture::from(js_sys::Promise::from(read_promise))
-                //     .await
-                //     .unwrap();
-                // console::log_1(&result);
-                console::log_1(&"Порт подключен".into());
-            });
-
-            return Some(rx);
+            console::log(&arr);
+            console::log_1(&"Порты обновлены".into());
+            self.ports = devices;
+            self.__ports = ports_js;
+            SerialEvent::Ports(Result::Ok(self.ports.clone()))
         }
 
-        /// Закрыть порт
-        pub fn close_port(&mut self) {
+        pub async fn open_port(&mut self, id: usize, baud_rate: BaudRate) -> SerialEvent {
+            let baud_rate = baud_rate.value();
+            if self.is_opened() {
+                console::log_1(&"Порт уже открыт".into());
+                return SerialEvent::Opened(Err("Порт уже открыт".to_string()));
+            }
+
+            let port = self.__ports.get(id).unwrap();
+            let options = js_sys::Object::new();
+            let _ = Reflect::set(
+                &options,
+                &JsValue::from_str("baudRate"),
+                &JsValue::from_f64(baud_rate as f64),
+            );
+            match port.open(&JsValue::from(options)) {
+                Ok(p) => JsFuture::from(p).await.unwrap(),
+                Err(_) => {
+                    console::log_1(&"Ошибка открытия порта".into());
+                    return SerialEvent::Opened(Err("Ошибка открытия порта".to_string()));
+                }
+            };
+
+            let reader = js_sys::Reflect::get(port, &JsValue::from_str("readable"))
+                .unwrap()
+                .unchecked_into::<web_sys::ReadableStream>();
+
+            self.opened_port = Some(self.ports.get(id).unwrap().clone());
+            self.__reader = Some(
+                reader
+                    .get_reader()
+                    .dyn_into::<ReadableStreamDefaultReader>()
+                    .unwrap(),
+            );
+            console::log_1(&"Порт подключен".into());
+            SerialEvent::Opened(Ok(true))
+        }
+
+        pub async fn close_port(&mut self) -> SerialEvent {
+            if !self.is_opened() {
+                console::log_1(&"Нет открытого порта для чтения".into());
+                return SerialEvent::Opened(Ok(false));
+            }
+            let port = self
+                .__ports
+                .get(self.opened_port.as_ref().unwrap().id)
+                .unwrap();
+            self.__reader.as_ref().unwrap().releaseLock();
+            JsFuture::from(port.close()).await.unwrap();
+
             self.opened_port = None;
-            // self.reader.unwrap().get_reader().
-            self.reader = None;
+            self.__reader = None;
             console::log_1(&"Порт закрыт".into());
+            SerialEvent::Opened(Ok(false))
         }
 
-        // pub fn send_data(&self, data: &[u8]) {
-        //     if let Some(port) = &self.opened_port {
-        //         let writer = js_sys::Reflect::get(port, &JsValue::from_str("writable"))
-        //             .unwrap()
-        //             .unchecked_into::<web_sys::WritableStream>();
+        pub async fn send_data(&self, data: &[u8]) -> SerialEvent {
+            if !self.is_opened() {
+                console::log_1(&"Нет открытого порта для чтения".into());
+                return SerialEvent::Sended(Err("Нет открытого порта для чтения".to_string()));
+            }
+            if let Some(port) = &self.opened_port {
+                let port = self.__ports.get(port.id).unwrap();
+                let writer = js_sys::Reflect::get(port, &JsValue::from_str("writable"))
+                    .unwrap()
+                    .unchecked_into::<web_sys::WritableStream>();
 
-        //         let data_vec = data.to_vec();
-        //         wasm_bindgen_futures::spawn_local(async move {
-        //             let writer_obj = writer.get_writer().unwrap();
-        //             let encoded = js_sys::Uint8Array::from(&data_vec[..]);
-        //             writer_obj.write_with_chunk(&encoded).unwrap();
-        //             writer_obj.release_lock();
-        //         });
-        //     } else {
-        //         console::log_1(&"Нет открытого порта для отправки".into());
-        //     }
-        // }
+                let data_vec = data.to_vec();
+                let writer_obj = writer.get_writer().unwrap();
+                let encoded = js_sys::Uint8Array::from(&data_vec[..]);
+                JsFuture::from(writer_obj.write_with_chunk(&encoded))
+                    .await
+                    .unwrap();
+                writer_obj.release_lock();
+            }
+            SerialEvent::Sended(Ok(true))
+        }
 
-        // Асинхронное чтение данных (через callback или кэш)
-        // pub fn read_data(&mut self, self_rc: Rc<RefCell<Self>>) {
-        //     if self.opened_port.is_none() || self.reader.is_none() {
-        //         console::log_1(&"Нет открытого порта для чтения".into());
-        //         return;
-        //     }
+        pub async fn read_data(&mut self) -> SerialEvent {
+            if !self.is_opened() {
+                console::log_1(&"Нет открытого порта для чтения".into());
+                return SerialEvent::Data(Err("Нет открытого порта для чтения".to_string()));
+            }
 
-        //     wasm_bindgen_futures::spawn_local(async move {
-        //         let self_clone = self_rc.borrow();
-        //         let reader_obj = self_clone.reader.as_ref().unwrap();
-        //         loop {
-        //             let result = read_line(&reader_obj).await.unwrap();
-        //             console::log_1(&result.unwrap().into());
-        //         }
-        //     });
-        // }
+            let reader_obj = self.__reader.as_ref().unwrap();
+            let result = match JsFuture::from(Promise::from(reader_obj.read())).await {
+                Ok(result) => result,
+                Err(_) => {
+                    return SerialEvent::Data(Err("Ошибка чтения порта".to_string()));
+                }
+            };
+            let done = match Reflect::get(&result, &JsValue::from_str("done")) {
+                Ok(v) => v.as_bool().unwrap_or(false),
+                Err(_) => {
+                    return SerialEvent::Data(Err("Ошибка чтения порта".to_string()));
+                }
+            };
+
+            if done {
+                if self.buffer.is_empty() {
+                    return SerialEvent::Data(Ok(vec![]));
+                } else {
+                    let leftover = std::mem::take(&mut self.buffer);
+                    return SerialEvent::Data(Ok(vec![leftover]));
+                }
+            }
+
+            let value = match Reflect::get(&result, &JsValue::from_str("value")) {
+                Ok(v) => v,
+                Err(_) => {
+                    return SerialEvent::Data(
+                        Err("Ошибка поля value при чтении порта".to_string()),
+                    );
+                }
+            };
+            if value.is_undefined() {
+                return SerialEvent::Data(Ok(vec![]));
+            }
+
+            let array = Uint8Array::new(&value);
+            let mut chunk = vec![0u8; array.length() as usize];
+            array.copy_to(&mut chunk[..]);
+
+            if let Ok(text) = String::from_utf8(chunk) {
+                self.buffer.push_str(&text);
+            }
+
+            let mut lines = Vec::new();
+            while let Some(pos) = self.buffer.find('\n') {
+                let line = self.buffer[..pos]
+                    .trim_end_matches(&['\r', '\n'][..])
+                    .to_string();
+                lines.push(line);
+                self.buffer = self.buffer[pos + 1..].to_string();
+            }
+
+            SerialEvent::Data(Ok(lines))
+        }
     }
 }
