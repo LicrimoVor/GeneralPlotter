@@ -1,11 +1,10 @@
 use super::super::libs::button_image::button_image_18;
 use crate::libs::serials::{BaudRate, SerialAction, SerialDevice, SerialEvent};
 use crate::{
-    libs::{svg_img::SvgImage, timer::Timer},
+    libs::{mpsc, print::print, svg_img::SvgImage, timer::Timer},
     ui::libs::status::{Status, status_img},
 };
 use egui::{Vec2, Widget};
-use futures::channel::mpsc;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -60,21 +59,42 @@ impl Panel {
     }
 
     fn serial_read(&mut self) {
-        let event = self.serial_rx.borrow_mut().try_next().ok().flatten();
+        let event = self.serial_rx.borrow_mut().try_recv();
         if event.is_none() {
             return;
         }
+
         let event = event.unwrap();
         match event {
             SerialEvent::Opened(result) => match result {
-                Ok(true) => self.status = Status::Ok,
-                Ok(false) => self.status = Status::Default,
-                Err(_) => self.status = Status::Error,
-                _ => {}
+                Ok(true) => {
+                    self.status = Status::Ok;
+                    self.is_opened = true;
+                }
+                Ok(false) => {
+                    self.status = Status::Default;
+                    self.is_opened = false;
+                }
+                Err(_) => {
+                    self.status = Status::Error;
+                    self.is_opened = false;
+                }
             },
             SerialEvent::Loading(is_loading) => match is_loading {
-                Ok(true) => self.status = Status::isLoading,
-                Err(_) => self.status = Status::Error,
+                Ok(true) => {
+                    self.status = if self.is_opened {
+                        Status::Ok
+                    } else {
+                        Status::isLoading
+                    }
+                }
+                Err(_) => {
+                    self.status = if self.is_opened {
+                        Status::Ok
+                    } else {
+                        Status::Error
+                    }
+                }
                 _ => {}
             },
             SerialEvent::Ports(result) => {
@@ -86,7 +106,7 @@ impl Panel {
         }
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
         if self._timer.is_pass_iterval() {
             self.update();
         }
@@ -145,7 +165,7 @@ impl Panel {
                         ui.disable();
                     }
 
-                    if self.status == Status::Ok {
+                    if self.is_opened {
                         if button_image_18(ui, SvgImage::DISCONNECT, None).clicked() {
                             let _ = self
                                 .serial_tx

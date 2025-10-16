@@ -27,6 +27,7 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.54"
 tokio = { version = "1.38", features = ["sync", "macros", "rt"] }
 futures = "0.3"
+chrono = "0.4"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 serialport = "4.8.1"

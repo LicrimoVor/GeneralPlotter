@@ -1,7 +1,6 @@
 use crate::core::settings::Settings;
-use crate::libs::serials::{Serial, SerialEvent};
-use crate::libs::sleep::sleep_ms;
-use crate::logic::{Logic, SensorData};
+use crate::libs::{serials::Serial, sleep::sleep_ms};
+use crate::logic::{Logic, SensorData, run_logic};
 use crate::ui::{ConfigLogic, UserInterface};
 use eframe::App;
 use std::sync::{Arc, Mutex};
@@ -21,7 +20,7 @@ impl AppState {
 
         let mut serial = Serial::new();
         let (mut serial_rx, mut serial_tx) = serial.subscribe();
-        let mut logic = Logic::new(config.clone(), sensor_data.clone());
+        let mut logic = Logic::new(config.clone(), sensor_data.clone(), settings.clone());
         let ui = UserInterface::new(
             config.clone(),
             sensor_data.clone(),
@@ -29,44 +28,23 @@ impl AppState {
             &mut serial,
         );
 
+        let settings_clone = settings.clone();
         #[cfg(not(target_arch = "wasm32"))]
         {
             std::thread::spawn(move || {
                 loop {
-                    logic.run();
-                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    sleep_ms(settings_clone.lock().unwrap().time_step_ms);
+                    run_logic(&mut logic, &mut serial_rx, &mut serial_tx);
                 }
             });
         }
 
         #[cfg(target_arch = "wasm32")]
         {
-            use web_sys::console;
             wasm_bindgen_futures::spawn_local(async move {
                 loop {
-                    sleep_ms(50).await;
-                    let event = serial_rx.try_next().ok().flatten();
-                    if event.is_none() {
-                        continue;
-                    }
-
-                    let event = event.unwrap();
-                    match event {
-                        SerialEvent::Data(result) => {
-                            if let Ok(data) = result {
-                                for val in data {
-                                    logic.run();
-                                    console::log_1(&format!("{:?}", val).as_str().into());
-                                }
-                            }
-                        }
-                        SerialEvent::Opened(result) => {
-                            if let Err(e) = result {
-                                console::log_1(&e.as_str().into());
-                            }
-                        }
-                        _ => {}
-                    }
+                    sleep_ms(25).await;
+                    run_logic(&mut logic, &mut serial_rx, &mut serial_tx)
                 }
             });
         }
@@ -89,6 +67,7 @@ impl App for AppState {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        ctx.request_repaint_after(std::time::Duration::from_millis(16));
         self.ui.run(ctx, _frame);
     }
 }

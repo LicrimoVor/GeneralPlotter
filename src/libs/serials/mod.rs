@@ -2,15 +2,14 @@ mod types;
 mod wasm;
 mod win;
 
-use futures::{SinkExt, channel::mpsc, future::join_all};
+use crate::libs::{mpsc, sleep::sleep_ms};
 use serde::{Deserialize, Serialize};
 pub use types::BaudRate;
 #[cfg(target_arch = "wasm32")]
 use wasm::wasm_impl;
-#[cfg(not(target_arch = "wasm32"))]
-use win::desktop_impl;
 
-use crate::libs::sleep::sleep_ms;
+#[cfg(not(target_arch = "wasm32"))]
+use win::desktop_impl::SerialPort;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct SerialDevice {
@@ -43,6 +42,9 @@ pub struct Serial {
     txs: Vec<mpsc::Sender<SerialEvent>>,
     rxs: Vec<mpsc::Receiver<SerialAction>>,
 
+    #[cfg(not(target_arch = "wasm32"))]
+    __opened_port: Option<Box<dyn SerialPort>>,
+
     #[cfg(target_arch = "wasm32")]
     __ports: Vec<wasm_impl::SerialPort>,
     #[cfg(target_arch = "wasm32")]
@@ -60,6 +62,9 @@ impl Serial {
             txs: vec![],
             rxs: vec![],
 
+            #[cfg(not(target_arch = "wasm32"))]
+            __opened_port: None,
+
             #[cfg(target_arch = "wasm32")]
             __reader: None,
             #[cfg(target_arch = "wasm32")]
@@ -68,21 +73,57 @@ impl Serial {
     }
 
     pub fn subscribe(&mut self) -> (mpsc::Receiver<SerialEvent>, mpsc::Sender<SerialAction>) {
-        let (tx_event, rx_event) = mpsc::channel::<SerialEvent>(100);
-        let (tx_action, rx_action) = mpsc::channel::<SerialAction>(100);
+        let (tx_event, rx_event) = mpsc::channel::<SerialEvent>();
+        let (tx_action, rx_action) = mpsc::channel::<SerialAction>();
         self.txs.push(tx_event);
         self.rxs.push(rx_action);
         (rx_event, tx_action)
     }
 
     pub fn spawn_loop(mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        std::thread::spawn(move || {
+            loop {
+                let actions = self
+                    .rxs
+                    .iter_mut()
+                    .map(|rx| rx.try_recv())
+                    .collect::<Vec<_>>();
+
+                for action in actions {
+                    if action.is_none() {
+                        continue;
+                    }
+
+                    self.send_event(SerialEvent::Loading(Ok(true)));
+                    let result = match action.unwrap() {
+                        SerialAction::UpdatePorts => self.update_ports(),
+                        SerialAction::OpenPort((port, baud_rate)) => {
+                            self.open_port(port.id, baud_rate)
+                        }
+                        SerialAction::ClosePort => self.close_port(),
+                        SerialAction::SendData(data) => self.send_data(data.as_bytes()),
+                    };
+                    self.send_event(result);
+                    self.send_event(SerialEvent::Loading(Ok(false)));
+                }
+
+                if self.is_opened() {
+                    let result = self.read_data();
+                    self.send_event(result);
+                }
+
+                sleep_ms(10);
+            }
+        });
+
         #[cfg(target_arch = "wasm32")]
         wasm_bindgen_futures::spawn_local(async move {
             loop {
                 let actions = self
                     .rxs
                     .iter_mut()
-                    .map(|rx| rx.try_next().ok().flatten())
+                    .map(|rx| rx.try_recv())
                     .collect::<Vec<_>>();
 
                 for action in actions {
@@ -114,20 +155,14 @@ impl Serial {
     }
 
     fn is_opened(&self) -> bool {
-        self.opened_port.is_some() && self.__reader.is_some()
-    }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            return self.opened_port.is_some() && self.__opened_port.is_some();
+        }
 
-    async fn send_event(&mut self, event: SerialEvent) {
-        let futures = self
-            .txs
-            .iter_mut()
-            .map(|tx| tx.send(event.clone()))
-            .collect::<Vec<_>>();
-        let results = join_all(futures).await;
-        for res in results {
-            // if let Err(e) = res {
-            //     console::log_1(&e);
-            // }
+        #[cfg(target_arch = "wasm32")]
+        {
+            return self.opened_port.is_some() && self.__reader.is_some();
         }
     }
 }

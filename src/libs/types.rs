@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Value {
     Text(String),
-    Number(i32),
+    Number(f64),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]

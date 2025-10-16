@@ -4,14 +4,15 @@ use super::types::ConfigLogic;
 use crate::{
     core::settings::Settings,
     libs::{
+        mpsc,
         serials::{Serial, SerialAction, SerialEvent},
         svg_img::SvgImage,
         types::Theme,
     },
     logic::SensorData,
+    ui::chart::Chart,
 };
 use egui::Vec2;
-use futures::channel::mpsc;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -31,6 +32,7 @@ pub struct UserInterface {
     // ui
     settings_modal: SettingsModal,
     panel: Panel,
+    chart: Chart,
 }
 
 impl UserInterface {
@@ -40,13 +42,13 @@ impl UserInterface {
         settings: Arc<Mutex<Settings>>,
         serial: &mut Serial,
     ) -> Self {
-        let (mut serial_rx, mut serial_tx) = serial.subscribe();
+        let (serial_rx, serial_tx) = serial.subscribe();
         let serial_rx = Rc::new(RefCell::new(serial_rx));
         let serial_tx = Rc::new(RefCell::new(serial_tx));
 
         Self {
             config,
-            sensor_data,
+            sensor_data: sensor_data.clone(),
             settings_modal: SettingsModal::new(settings.clone()),
             settings,
 
@@ -54,6 +56,7 @@ impl UserInterface {
             serial_tx: serial_tx.clone(),
 
             panel: Panel::new(serial_rx, serial_tx),
+            chart: Chart::new(sensor_data),
         }
     }
 
@@ -102,9 +105,7 @@ impl UserInterface {
         }
         egui::CentralPanel::default().show(ctx, |ui| {
             // self.panel.run(ctx, ui);
-            ui.add(SvgImage::PEACE.get_image());
-
-            ui.add(SvgImage::PEACE.get_image());
+            self.chart.run(ctx, ui);
         });
     }
 }

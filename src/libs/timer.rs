@@ -16,6 +16,13 @@ impl Timer {
         }
     }
 
+    pub fn new(iterval_ms: u64) -> Self {
+        Self {
+            last_update: Instant::now(),
+            interval: Duration::from_millis(iterval_ms),
+        }
+    }
+
     pub fn is_pass_iterval(&mut self) -> bool {
         if self.last_update.elapsed() >= self.interval {
             self.last_update = Instant::now();

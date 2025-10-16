@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Default)]
 pub struct Settings {
     pub theme: Theme,
+    pub delimeter: char,
+    pub time_step_ms: i32,
 }
 
 impl Settings {
@@ -13,7 +15,11 @@ impl Settings {
         if let Some(storage) = storage {
             eframe::get_value(storage, super::consts::KEY_SETTINGS).unwrap_or_default()
         } else {
-            Settings::default()
+            Self {
+                delimeter: ';',
+                time_step_ms: 50,
+                ..Settings::default()
+            }
         }
     }
 }

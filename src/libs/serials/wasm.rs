@@ -3,14 +3,11 @@ use super::types::BaudRate;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_impl {
-    use crate::libs::serials::SerialEvent;
-
     use super::*;
-    use eframe::Result;
-    use js_sys::Reflect;
-    use js_sys::{Array, Promise, Uint8Array};
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen::prelude::*;
+    use crate::libs::{print::print, serials::SerialEvent};
+    use futures::{SinkExt, future::join_all};
+    use js_sys::{Array, Promise, Reflect, Uint8Array};
+    use wasm_bindgen::{JsCast, prelude::*};
     use wasm_bindgen_futures::JsFuture;
     use web_sys::console;
 
@@ -103,21 +100,20 @@ pub mod wasm_impl {
                         name: name.clone(),
                         id: i,
                     });
-                    console::log_1(&format!("Порт {}", name).into());
+                    print(format!("Порт {}", name).as_str());
                 }
             }
 
-            console::log(&arr);
-            console::log_1(&"Порты обновлены".into());
+            print("Порты обновлены");
             self.ports = devices;
             self.__ports = ports_js;
-            SerialEvent::Ports(Result::Ok(self.ports.clone()))
+            SerialEvent::Ports(Ok(self.ports.clone()))
         }
 
         pub async fn open_port(&mut self, id: usize, baud_rate: BaudRate) -> SerialEvent {
             let baud_rate = baud_rate.value();
             if self.is_opened() {
-                console::log_1(&"Порт уже открыт".into());
+                print("Порт уже открыт");
                 return SerialEvent::Opened(Err("Порт уже открыт".to_string()));
             }
 
@@ -131,7 +127,7 @@ pub mod wasm_impl {
             match port.open(&JsValue::from(options)) {
                 Ok(p) => JsFuture::from(p).await.unwrap(),
                 Err(_) => {
-                    console::log_1(&"Ошибка открытия порта".into());
+                    print("Ошибка открытия порта");
                     return SerialEvent::Opened(Err("Ошибка открытия порта".to_string()));
                 }
             };
@@ -147,13 +143,13 @@ pub mod wasm_impl {
                     .dyn_into::<ReadableStreamDefaultReader>()
                     .unwrap(),
             );
-            console::log_1(&"Порт подключен".into());
+            print("Порт подключен");
             SerialEvent::Opened(Ok(true))
         }
 
         pub async fn close_port(&mut self) -> SerialEvent {
             if !self.is_opened() {
-                console::log_1(&"Нет открытого порта для чтения".into());
+                print("Нет открытого порта для чтения");
                 return SerialEvent::Opened(Ok(false));
             }
             let port = self
@@ -165,13 +161,13 @@ pub mod wasm_impl {
 
             self.opened_port = None;
             self.__reader = None;
-            console::log_1(&"Порт закрыт".into());
+            print("Порт закрыт");
             SerialEvent::Opened(Ok(false))
         }
 
         pub async fn send_data(&self, data: &[u8]) -> SerialEvent {
             if !self.is_opened() {
-                console::log_1(&"Нет открытого порта для чтения".into());
+                print("Нет открытого порта для чтения");
                 return SerialEvent::Sended(Err("Нет открытого порта для чтения".to_string()));
             }
             if let Some(port) = &self.opened_port {
@@ -193,7 +189,7 @@ pub mod wasm_impl {
 
         pub async fn read_data(&mut self) -> SerialEvent {
             if !self.is_opened() {
-                console::log_1(&"Нет открытого порта для чтения".into());
+                print("Нет открытого порта для чтения");
                 return SerialEvent::Data(Err("Нет открытого порта для чтения".to_string()));
             }
 
@@ -250,6 +246,15 @@ pub mod wasm_impl {
             }
 
             SerialEvent::Data(Ok(lines))
+        }
+
+        pub async fn send_event(&mut self, event: SerialEvent) {
+            let futures = self
+                .txs
+                .iter_mut()
+                .map(|tx| tx.send(event.clone()))
+                .collect::<Vec<_>>();
+            let results = join_all(futures).await;
         }
     }
 }
