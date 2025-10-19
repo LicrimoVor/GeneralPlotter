@@ -11,6 +11,8 @@ pub enum SvgImage {
     CIRCLE_LOADER,
     SETTINGS,
     PLUS,
+    UP,
+    DOWN,
     NONE,
 }
 
@@ -27,6 +29,8 @@ impl SvgImage {
             SvgImage::CIRCLE_X => egui::include_image!("../../assets/circle-dashed-x.svg"),
             SvgImage::SETTINGS => egui::include_image!("../../assets/settings.svg"),
             SvgImage::PLUS => egui::include_image!("../../assets/plus.svg"),
+            SvgImage::UP => egui::include_image!("../../assets/up.svg"),
+            SvgImage::DOWN => egui::include_image!("../../assets/down.svg"),
             SvgImage::NONE => egui::include_image!("../../assets/none.svg"),
         }
     }

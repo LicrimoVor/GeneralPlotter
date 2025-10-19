@@ -1,7 +1,5 @@
-mod chart;
+mod components;
 mod libs;
-mod panel;
-mod settings;
 mod styles;
 mod types;
 mod ui;

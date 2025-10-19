@@ -1,16 +1,14 @@
-use super::panel::Panel;
-use super::settings::SettingsModal;
+use super::components::{central_panel::CentralPanel, left_panel::LeftPanel};
 use super::types::ConfigLogic;
+use crate::libs::timer::Timer;
 use crate::{
     core::settings::Settings,
     libs::{
         mpsc,
         serials::{Serial, SerialAction, SerialEvent},
-        svg_img::SvgImage,
         types::Theme,
     },
     logic::SensorData,
-    ui::chart::Chart,
 };
 use egui::Vec2;
 use std::{
@@ -30,9 +28,10 @@ pub struct UserInterface {
     serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
 
     // ui
-    settings_modal: SettingsModal,
-    panel: Panel,
-    chart: Chart,
+    left_panel: LeftPanel,
+    central_panel: CentralPanel,
+
+    _timer: Timer,
 }
 
 impl UserInterface {
@@ -47,26 +46,36 @@ impl UserInterface {
         let serial_tx = Rc::new(RefCell::new(serial_tx));
 
         Self {
-            config,
+            config: config.clone(),
             sensor_data: sensor_data.clone(),
-            settings_modal: SettingsModal::new(settings.clone()),
-            settings,
+            settings: settings.clone(),
 
             serial_rx: serial_rx.clone(),
             serial_tx: serial_tx.clone(),
 
-            panel: Panel::new(serial_rx, serial_tx),
-            chart: Chart::new(sensor_data),
+            central_panel: CentralPanel::new(
+                config.clone(),
+                sensor_data.clone(),
+                settings.clone(),
+                serial_tx.clone(),
+            ),
+            left_panel: LeftPanel::new(settings.clone(), serial_rx.clone(), serial_tx.clone()),
+
+            _timer: Timer::new(50),
         }
     }
 
     fn update(&mut self) {
         // while let Ok(proxy_data) = self.state.proxy_data_rx.try_recv() {}
+        self.central_panel.update();
+        self.left_panel.update();
     }
 
     pub fn run(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui_extras::install_image_loaders(ctx);
-        self.update();
+        if self._timer.is_pass_iterval() {
+            self.update();
+        }
         // ctx.set_debug_on_hover(true);
 
         {
@@ -90,8 +99,7 @@ impl UserInterface {
                 .resizable(false)
                 .show(ctx, |ui| {
                     ui.add_space(8.0);
-                    self.panel.show(ctx, ui);
-                    self.settings_modal.show(ctx, ui);
+                    self.left_panel.show(ctx, ui);
                 });
         }
         if width > 1170.0 {
@@ -100,12 +108,11 @@ impl UserInterface {
                 .max_width(200.0)
                 .resizable(false)
                 .show(ctx, |ui| {
-                    ui.label("Левая панель");
+                    ui.label("Правая панель");
                 });
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            // self.panel.run(ctx, ui);
-            self.chart.run(ctx, ui);
+            self.central_panel.show(ctx, ui);
         });
     }
 }

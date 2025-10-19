@@ -1,14 +1,14 @@
-use super::super::libs::button_image::button_image_18;
 use crate::libs::serials::{BaudRate, SerialAction, SerialDevice, SerialEvent};
+use crate::ui::libs::button_image::button_image_18;
 use crate::{
-    libs::{mpsc, print::print, svg_img::SvgImage, timer::Timer},
+    libs::{mpsc, svg_img::SvgImage},
     ui::libs::status::{Status, status_img},
 };
 use egui::{Vec2, Widget};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub struct Panel {
+pub struct ConfigPort {
     ports: Vec<SerialDevice>,
     selected_port: Option<SerialDevice>,
     baud_rate: BaudRate,
@@ -19,10 +19,9 @@ pub struct Panel {
     serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
 
     _angle_loader: f32,
-    _timer: Timer,
 }
 
-impl Panel {
+impl ConfigPort {
     pub fn new(
         serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
         serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
@@ -38,14 +37,13 @@ impl Panel {
             serial_tx,
 
             _angle_loader: 0.0,
-            _timer: Timer::default(),
         };
         panel.update_ports();
         panel
     }
 }
 
-impl Panel {
+impl ConfigPort {
     fn update_ports(&mut self) {
         let _ = self
             .serial_tx
@@ -53,7 +51,7 @@ impl Panel {
             .try_send(SerialAction::UpdatePorts);
     }
 
-    fn update(&mut self) {
+    pub fn update(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         self.update_ports();
     }
@@ -107,9 +105,6 @@ impl Panel {
     }
 
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
-        if self._timer.is_pass_iterval() {
-            self.update();
-        }
         self.serial_read();
 
         let width = ui.available_width();

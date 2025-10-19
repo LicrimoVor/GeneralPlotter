@@ -3,7 +3,7 @@ use crate::{
     libs::{svg_img::SvgImage, types::Theme},
     ui::libs::button_image::button_image_18,
 };
-use egui::{Color32, Id, Modal};
+use egui::{Id, Modal};
 use std::sync::{Arc, Mutex};
 
 pub struct SettingsModal {
@@ -21,6 +21,7 @@ impl SettingsModal {
     }
 }
 impl SettingsModal {
+    pub fn update(&mut self) {}
     pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         let Self { _is_open, settings } = self;
 
