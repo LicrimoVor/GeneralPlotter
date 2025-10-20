@@ -1,18 +1,20 @@
-use crate::libs::timer::Timer;
 use crate::logic::SensorData;
+use crate::ui::settings::Settings;
 use egui_plot::{Line, Plot, PlotPoints};
 use std::sync::{Arc, Mutex};
 
 pub struct Chart {
     points: Vec<Vec<[f64; 2]>>,
     sensor_data: Arc<Mutex<SensorData>>,
+    settings: Arc<Mutex<Settings>>,
 }
 
 impl Chart {
-    pub fn new(sensor_data: Arc<Mutex<SensorData>>) -> Self {
+    pub fn new(settings: Arc<Mutex<Settings>>, sensor_data: Arc<Mutex<SensorData>>) -> Self {
         Self {
             points: vec![],
             sensor_data,
+            settings,
         }
     }
 }
@@ -22,7 +24,7 @@ impl Chart {
         self.points = self.sensor_data.lock().unwrap().all_points.clone();
     }
 
-    pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
         let lines: Vec<Line> = self
             .points
             .iter()

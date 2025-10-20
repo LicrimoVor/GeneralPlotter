@@ -1,23 +1,17 @@
-use crate::core::settings::Settings;
+use super::config::ConfigLogic;
 use crate::libs::types::{LinierFunc, Value};
 use crate::logic::SensorData;
-use crate::ui::ConfigLogic;
 use chrono::Utc;
 use std::sync::{Arc, Mutex};
 
-struct LogicState {
+pub struct Logic {
+    // settings: Arc<Mutex<Settings>>,
     config: Arc<Mutex<ConfigLogic>>,
     sensor_data: Arc<Mutex<SensorData>>,
-}
 
-pub struct Logic {
-    settings: Arc<Mutex<Settings>>,
-    state: LogicState,
     // extractor: Option<dyn Any>,
     // logger: Option<dyn Any>,
     // serializer: Option<dyn Any>,
-    funcs: Vec<LinierFunc>,
-
     __t_start: f64,
 }
 
@@ -25,16 +19,12 @@ impl Logic {
     pub fn new(
         config: Arc<Mutex<ConfigLogic>>,
         sensor_data: Arc<Mutex<SensorData>>,
-        settings: Arc<Mutex<Settings>>,
+        // settings: Arc<Mutex<Settings>>,
     ) -> Self {
         Self {
-            state: LogicState {
-                config,
-                sensor_data,
-            },
-            funcs: vec![],
-            settings,
-
+            config,
+            sensor_data,
+            // settings,
             __t_start: Utc::now().timestamp_millis() as f64 / 1000.0,
         }
     }
@@ -44,7 +34,7 @@ impl Logic {
     }
 
     pub fn init(&mut self) {
-        self.state.sensor_data.lock().unwrap().clear();
+        self.sensor_data.lock().unwrap().clear();
         self.__t_start = Utc::now().timestamp_millis() as f64 / 1000.0;
     }
 
@@ -65,9 +55,14 @@ impl Logic {
                 _ => Value::Text(val.clone()),
             })
             .collect::<Vec<Value>>();
-
-        self.state
-            .sensor_data
+        if self.config.lock().unwrap().cols.len() < parsed.len() {
+            let mut config = self.config.lock().unwrap();
+            config.cols = parsed.clone();
+            config.linier_funcs = (0..parsed.len())
+                .map(|_| LinierFunc::default())
+                .collect::<Vec<LinierFunc>>();
+        }
+        self.sensor_data
             .lock()
             .unwrap()
             .add_data(serial, parsed, t_win, t_serial);

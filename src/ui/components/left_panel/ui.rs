@@ -1,15 +1,11 @@
-use crate::core::settings::Settings;
-use crate::libs::mpsc;
-use crate::libs::serials::{SerialAction, SerialEvent};
-use crate::ui::components::config_port::ConfigPort;
-use crate::ui::components::settings::SettingsModal;
-use std::cell::RefCell;
-use std::rc::Rc;
+use crate::libs::serials::Serial;
+use crate::ui::{
+    components::{config_port::ConfigPort, settings_modal::SettingsModal},
+    settings::Settings,
+};
 use std::sync::{Arc, Mutex};
 
 pub struct LeftPanel {
-    serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
-    serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
     settings: Arc<Mutex<Settings>>,
 
     // ui
@@ -18,14 +14,10 @@ pub struct LeftPanel {
 }
 
 impl LeftPanel {
-    pub fn new(
-        settings: Arc<Mutex<Settings>>,
-        serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
-        serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
-    ) -> Self {
+    pub fn new(settings: Arc<Mutex<Settings>>, serial: &mut Serial) -> Self {
+        let (serial_rx, serial_tx) = serial.subscribe();
+
         Self {
-            serial_rx: serial_rx.clone(),
-            serial_tx: serial_tx.clone(),
             settings: settings.clone(),
 
             settings_modal: SettingsModal::new(settings),

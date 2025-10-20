@@ -5,11 +5,10 @@ use super::types::BaudRate;
 pub mod wasm_impl {
     use super::*;
     use crate::libs::{print::print, serials::SerialEvent};
-    use futures::{SinkExt, future::join_all};
+    use futures::future::join_all;
     use js_sys::{Array, Promise, Reflect, Uint8Array};
     use wasm_bindgen::{JsCast, prelude::*};
     use wasm_bindgen_futures::JsFuture;
-    use web_sys::console;
 
     #[wasm_bindgen]
     extern "C" {
@@ -65,7 +64,11 @@ pub mod wasm_impl {
     impl super::super::Serial {
         pub async fn update_ports(&mut self) -> SerialEvent {
             let mut devices = vec![];
-            let serial = get_navigator_serial().unwrap();
+            let serial = get_navigator_serial();
+            if serial.is_none() {
+                return SerialEvent::Ports(Err("Не получилось запросить serial".to_string()));
+            }
+            let serial = serial.unwrap();
             let _ = JsFuture::from(serial.requestPort().unwrap()).await;
             let ports_val = JsFuture::from(serial.get_ports().unwrap()).await.unwrap();
             let arr = Array::from(&ports_val);
@@ -125,7 +128,13 @@ pub mod wasm_impl {
                 &JsValue::from_f64(baud_rate as f64),
             );
             match port.open(&JsValue::from(options)) {
-                Ok(p) => JsFuture::from(p).await.unwrap(),
+                Ok(p) => match JsFuture::from(p).await {
+                    Ok(_) => {}
+                    Err(_) => {
+                        print("Ошибка открытия порта");
+                        return SerialEvent::Opened(Err("Ошибка открытия порта".to_string()));
+                    }
+                },
                 Err(_) => {
                     print("Ошибка открытия порта");
                     return SerialEvent::Opened(Err("Ошибка открытия порта".to_string()));
@@ -148,6 +157,7 @@ pub mod wasm_impl {
         }
 
         pub async fn close_port(&mut self) -> SerialEvent {
+            print("Закрываю порт");
             if !self.is_opened() {
                 print("Нет открытого порта для чтения");
                 return SerialEvent::Opened(Ok(false));
@@ -254,7 +264,7 @@ pub mod wasm_impl {
                 .iter_mut()
                 .map(|tx| tx.send(event.clone()))
                 .collect::<Vec<_>>();
-            let results = join_all(futures).await;
+            let _ = join_all(futures).await;
         }
     }
 }

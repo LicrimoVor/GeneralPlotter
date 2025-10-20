@@ -1,23 +1,27 @@
-#[derive(serde::Serialize, serde::Deserialize)]
+use crate::libs::message::Message;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub struct ConfigLogic {
-    pub lol: String,
+#[derive(Default)]
+pub struct UiData {
+    pub messages: Vec<Message>,
 }
 
-impl Default for ConfigLogic {
-    fn default() -> Self {
-        Self {
-            lol: "123123".to_string(),
-        }
-    }
-}
-
-impl ConfigLogic {
+impl UiData {
     pub fn new(storage: Option<&dyn eframe::Storage>) -> Self {
         if let Some(storage) = storage {
-            eframe::get_value(storage, crate::core::consts::KEY_CONFIG).unwrap_or_default()
+            eframe::get_value(storage, crate::core::consts::KEY_DATA).unwrap_or_default()
         } else {
-            ConfigLogic::default()
+            UiData::default()
         }
+    }
+
+    pub fn update(&mut self, message: String) {
+        self.messages.push(Message::info(message));
+    }
+
+    pub fn clear(&mut self) {
+        self.messages.clear();
     }
 }

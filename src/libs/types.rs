@@ -19,6 +19,7 @@ impl Default for Theme {
     }
 }
 
+#[derive(Serialize, Deserialize, Default)]
 pub struct LinierFunc {
     pub alpha: f32,
     pub beta: f32,

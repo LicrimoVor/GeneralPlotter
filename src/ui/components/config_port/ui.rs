@@ -5,8 +5,6 @@ use crate::{
     ui::libs::status::{Status, status_img},
 };
 use egui::{Vec2, Widget};
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub struct ConfigPort {
     ports: Vec<SerialDevice>,
@@ -15,16 +13,16 @@ pub struct ConfigPort {
     status: Status,
     is_opened: bool,
 
-    serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
-    serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
+    serial_rx: mpsc::Receiver<SerialEvent>,
+    serial_tx: mpsc::Sender<SerialAction>,
 
     _angle_loader: f32,
 }
 
 impl ConfigPort {
     pub fn new(
-        serial_rx: Rc<RefCell<mpsc::Receiver<SerialEvent>>>,
-        serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
+        serial_rx: mpsc::Receiver<SerialEvent>,
+        serial_tx: mpsc::Sender<SerialAction>,
     ) -> Self {
         let mut panel = Self {
             ports: vec![],
@@ -45,10 +43,7 @@ impl ConfigPort {
 
 impl ConfigPort {
     fn update_ports(&mut self) {
-        let _ = self
-            .serial_tx
-            .borrow_mut()
-            .try_send(SerialAction::UpdatePorts);
+        let _ = self.serial_tx.try_send(SerialAction::UpdatePorts);
     }
 
     pub fn update(&mut self) {
@@ -57,7 +52,7 @@ impl ConfigPort {
     }
 
     fn serial_read(&mut self) {
-        let event = self.serial_rx.borrow_mut().try_recv();
+        let event = self.serial_rx.try_recv();
         if event.is_none() {
             return;
         }
@@ -83,7 +78,12 @@ impl ConfigPort {
                     self.status = if self.is_opened {
                         Status::Ok
                     } else {
-                        Status::isLoading
+                        Status::IsLoading
+                    }
+                }
+                Ok(false) => {
+                    if self.status == Status::IsLoading {
+                        self.status = Status::Default;
                     }
                 }
                 Err(_) => {
@@ -93,7 +93,6 @@ impl ConfigPort {
                         Status::Error
                     }
                 }
-                _ => {}
             },
             SerialEvent::Ports(result) => {
                 if let Ok(ports) = result {
@@ -162,26 +161,20 @@ impl ConfigPort {
 
                     if self.is_opened {
                         if button_image_18(ui, SvgImage::DISCONNECT, None).clicked() {
-                            let _ = self
-                                .serial_tx
-                                .borrow_mut()
-                                .try_send(SerialAction::ClosePort);
+                            let _ = self.serial_tx.try_send(SerialAction::ClosePort);
                         };
                     } else {
                         if button_image_18(ui, SvgImage::CONNECT, None).clicked() {
-                            let _ = self
-                                .serial_tx
-                                .borrow_mut()
-                                .try_send(SerialAction::OpenPort((
-                                    self.selected_port.as_ref().unwrap().clone(),
-                                    self.baud_rate,
-                                )));
+                            let _ = self.serial_tx.try_send(SerialAction::OpenPort((
+                                self.selected_port.as_ref().unwrap().clone(),
+                                self.baud_rate,
+                            )));
                         };
                     }
                 });
 
                 ui.add_space(2.0);
-                if self.status == Status::isLoading {
+                if self.status == Status::IsLoading {
                     self._angle_loader += 0.03;
                     status_img(&self.status, ui)
                         .rotate(self._angle_loader, Vec2::splat(0.5))

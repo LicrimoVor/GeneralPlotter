@@ -5,12 +5,12 @@ mod state;
 mod traits;
 mod types;
 
+pub mod config;
 pub use state::Logic;
 pub use types::SensorData;
 
 use crate::libs::{
     mpsc,
-    print::print,
     serials::{SerialAction, SerialEvent},
 };
 

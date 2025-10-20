@@ -7,17 +7,17 @@ pub enum Status {
     Ok,
     Error,
     Default,
-    isLoading,
+    IsLoading,
 }
 
 pub fn status_img(status: &Status, ui: &mut egui::Ui) -> Image<'static> {
     match status {
-        Status::Ok => SvgImage::CIRCLE_CHECK.get_image().tint(Color32::GREEN),
+        Status::Ok => SvgImage::CircleCheck.get_image().tint(Color32::GREEN),
         Status::Default => SvgImage::NONE
             .get_image()
             .tint(ui.style().visuals.strong_text_color()),
-        Status::Error => SvgImage::CIRCLE_X.get_image().tint(Color32::RED),
-        Status::isLoading => SvgImage::CIRCLE_LOADER
+        Status::Error => SvgImage::CircleX.get_image().tint(Color32::RED),
+        Status::IsLoading => SvgImage::CircleLoader
             .get_image()
             .tint(ui.style().visuals.strong_text_color()),
     }

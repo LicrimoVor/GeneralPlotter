@@ -17,6 +17,7 @@ pub struct SerialDevice {
     pub name: String,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum SerialAction {
     UpdatePorts,
     OpenPort((SerialDevice, BaudRate)),

@@ -1,5 +1,5 @@
+use super::config::ConfigLogic;
 use super::traits::AbstractLogicEntity;
-use crate::ui::ConfigLogic;
 
 pub struct Extractor {}
 

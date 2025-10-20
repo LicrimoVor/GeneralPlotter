@@ -1,0 +1,9 @@
+services:
+    nginx:
+        container_name: proxy
+        image: nginx:1.19.3
+        restart: always
+        ports:
+            - "80:80"
+        volumes:
+            - ./nginx.conf:/etc/nginx/conf.d/default.conf

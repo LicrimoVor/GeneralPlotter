@@ -1,29 +1,21 @@
 use super::super::{chart::Chart, terminal::Terminal};
-use crate::libs::print;
-use crate::libs::timer::Timer;
+use crate::libs::mpsc;
+use crate::libs::serials::SerialAction;
+use crate::logic::config::ConfigLogic;
+use crate::ui::UiData;
 use crate::ui::libs::button_image::button_image_18;
-use crate::ui::types::ConfigLogic;
-use crate::{
-    core::settings::Settings,
-    libs::{mpsc, serials::SerialAction, svg_img::SvgImage},
-    logic::SensorData,
-};
-use chrono::offset;
+use crate::ui::settings::Settings;
+use crate::{libs::svg_img::SvgImage, logic::SensorData};
 use egui::Id;
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 pub struct CentralPanel {
     // data
-    config: Arc<Mutex<ConfigLogic>>,
     sensor_data: Arc<Mutex<SensorData>>,
     settings: Arc<Mutex<Settings>>,
-
-    // serial
-    serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
+    ui_data: Arc<Mutex<UiData>>,
 
     // ui
     chart: Chart,
@@ -35,19 +27,17 @@ pub struct CentralPanel {
 
 impl CentralPanel {
     pub fn new(
-        config: Arc<Mutex<ConfigLogic>>,
         sensor_data: Arc<Mutex<SensorData>>,
         settings: Arc<Mutex<Settings>>,
+        ui_data: Arc<Mutex<UiData>>,
         serial_tx: Rc<RefCell<mpsc::Sender<SerialAction>>>,
     ) -> Self {
         Self {
-            config: config.clone(),
             sensor_data: sensor_data.clone(),
             settings: settings.clone(),
-            serial_tx: serial_tx.clone(),
-
-            chart: Chart::new(sensor_data),
-            terminal: Terminal::new(settings.clone()),
+            ui_data: ui_data.clone(),
+            chart: Chart::new(settings.clone(), sensor_data.clone()),
+            terminal: Terminal::new(settings.clone(), ui_data.clone(), serial_tx),
 
             _collapsed_chart: false,
             _is_min_height: false,

@@ -1,4 +1,4 @@
-use crate::ui::ConfigLogic;
+use super::config::ConfigLogic;
 
 pub trait AbstractLogicEntity {
     fn run(&mut self);

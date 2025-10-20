@@ -1,3 +1,4 @@
+pub mod message;
 pub mod mpsc;
 pub mod print;
 pub mod save_csv;
