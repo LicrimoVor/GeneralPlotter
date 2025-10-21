@@ -19,18 +19,27 @@ impl Default for Theme {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LinierFunc {
-    pub alpha: f32,
-    pub beta: f32,
+    pub alpha: f64,
+    pub beta: f64,
+}
+
+impl Default for LinierFunc {
+    fn default() -> Self {
+        Self {
+            alpha: 1.0,
+            beta: 0.0,
+        }
+    }
 }
 
 impl LinierFunc {
-    pub fn new(alpha: f32, beta: f32) -> Self {
+    pub fn new(alpha: f64, beta: f64) -> Self {
         Self { alpha, beta }
     }
 
-    pub fn value(&self, x: f32) -> f32 {
+    pub fn value(&self, x: f64) -> f64 {
         self.alpha * x + self.beta
     }
 }

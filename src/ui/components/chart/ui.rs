@@ -4,7 +4,7 @@ use egui_plot::{Line, Plot, PlotPoints};
 use std::sync::{Arc, Mutex};
 
 pub struct Chart {
-    points: Vec<Vec<[f64; 2]>>,
+    all_points: Vec<(Vec<[f64; 2]>, Vec<[f64; 2]>)>,
     sensor_data: Arc<Mutex<SensorData>>,
     settings: Arc<Mutex<Settings>>,
 }
@@ -12,7 +12,7 @@ pub struct Chart {
 impl Chart {
     pub fn new(settings: Arc<Mutex<Settings>>, sensor_data: Arc<Mutex<SensorData>>) -> Self {
         Self {
-            points: vec![],
+            all_points: vec![],
             sensor_data,
             settings,
         }
@@ -21,16 +21,23 @@ impl Chart {
 
 impl Chart {
     pub fn update(&mut self) {
-        self.points = self.sensor_data.lock().unwrap().all_points.clone();
+        self.all_points = self.sensor_data.lock().unwrap().all_points.clone();
     }
 
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
+        let is_time_serial = self.settings.lock().unwrap().is_time_serial;
+
         let lines: Vec<Line> = self
-            .points
+            .all_points
             .iter()
             .enumerate()
             .map(|(i, points)| {
-                Line::new(format!("Line {}", i + 1), PlotPoints::from(points.clone()))
+                let line = if !is_time_serial {
+                    points.0.clone()
+                } else {
+                    points.1.clone()
+                };
+                Line::new(format!("Line {}", i + 1), PlotPoints::from(line))
             })
             .collect();
 

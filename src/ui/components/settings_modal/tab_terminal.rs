@@ -15,8 +15,18 @@ impl TabTerminal {
         ui.heading("Настройки терминала");
         let settings = &mut self.settings.lock().unwrap().terminal;
 
-        ui.checkbox(&mut settings.show_time, "Показывать время");
-        ui.checkbox(&mut settings.show_id, "Показывать ID сообщения");
+        if ui
+            .checkbox(&mut settings.show_time, "Показывать время")
+            .clicked()
+        {
+            self.ui_data.lock().unwrap().is_reboot = true;
+        };
+        if ui
+            .checkbox(&mut settings.show_id, "Показывать ID сообщения")
+            .clicked()
+        {
+            self.ui_data.lock().unwrap().is_reboot = true;
+        };
 
         ui.checkbox(&mut settings.time_selectable, "Выделение времени");
         ui.checkbox(&mut settings.id_selectable, "Выделение ID сообщения");

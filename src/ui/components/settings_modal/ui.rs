@@ -5,7 +5,7 @@ use crate::{
         libs::button_image::button_image_18, settings::Settings,
     },
 };
-use egui::{Id, Modal, Vec2};
+use egui::{Id, Modal, TextEdit, Vec2};
 use std::sync::{Arc, Mutex};
 
 #[derive(PartialEq)]
@@ -22,6 +22,8 @@ pub struct SettingsModal {
     active_tab: SettingsTab,
     terminal: TabTerminal,
     _is_open: bool,
+
+    _delimiter: String,
 }
 
 impl SettingsModal {
@@ -32,7 +34,9 @@ impl SettingsModal {
 
             active_tab: SettingsTab::General,
             terminal: TabTerminal::new(settings.clone(), ui_data.clone()),
+
             _is_open: false,
+            _delimiter: settings.lock().unwrap().delimiter.to_string(),
         }
     }
 }
@@ -64,12 +68,23 @@ impl SettingsModal {
             match self.active_tab {
                 SettingsTab::General => {
                     let mut settings = self.settings.lock().unwrap();
+                    let mut ui_data = self.ui_data.lock().unwrap();
                     ui.heading("Основные настройки");
                     ui.label("Тема интерфейса:");
                     ui.horizontal(|ui| {
                         ui.radio_value(&mut settings.theme, Theme::LIGTH, "Светлая");
                         ui.radio_value(&mut settings.theme, Theme::DARK, "Тёмная");
                     });
+                    ui.horizontal(|ui| {
+                        ui.label("Разделитель:");
+                        ui.add(TextEdit::singleline(&mut self._delimiter).char_limit(1));
+                        // ui.text_edit_singleline()
+                        // ui.
+                    });
+                    if !self._delimiter.is_empty() {
+                        settings.delimiter = self._delimiter.chars().next().unwrap();
+                        ui_data.is_reboot = true;
+                    }
                 }
 
                 SettingsTab::Terminal => {

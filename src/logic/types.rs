@@ -1,4 +1,4 @@
-use crate::libs::types::Value;
+use crate::libs::types::{LinierFunc, Value};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
@@ -11,8 +11,10 @@ pub struct SensorData {
     pub t_serial: Vec<f64>,
 
     pub all_serials: Vec<Vec<String>>,
+    pub all_originals: Vec<Vec<Value>>,
     pub all_parseds: Vec<Vec<Value>>,
-    pub all_points: Vec<Vec<[f64; 2]>>,
+    // t_win value, t_serial value
+    pub all_points: Vec<(Vec<[f64; 2]>, Vec<[f64; 2]>)>,
 }
 
 impl SensorData {
@@ -24,9 +26,30 @@ impl SensorData {
         }
     }
 
+    pub fn apply_linier(
+        original: &Vec<Value>,
+        linier_funcs: &Vec<Option<LinierFunc>>,
+    ) -> Vec<Value> {
+        original
+            .iter()
+            .enumerate()
+            .map(|(k, v)| match v {
+                Value::Number(numb) => {
+                    if let Some(linier) = linier_funcs.get(k).unwrap() {
+                        Value::Number(linier.value(*numb))
+                    } else {
+                        Value::Number(*numb)
+                    }
+                }
+                _ => v.clone(),
+            })
+            .collect::<Vec<Value>>()
+    }
+
     pub fn add_data(
         &mut self,
         serial: Vec<String>,
+        original: Vec<Value>,
         parsed: Vec<Value>,
         t_win: f64,
         t_serial: Option<f64>,
@@ -36,10 +59,13 @@ impl SensorData {
 
         self.all_serials.push(serial.clone());
         self.all_parseds.push(parsed.clone());
+        self.all_originals.push(original.clone());
 
         self.t_win.push(t_win);
         if let Some(t_serial) = t_serial {
             self.t_serial.push(t_serial);
+        } else {
+            self.t_serial.push(0.0);
         }
 
         let numbs = parsed
@@ -51,13 +77,47 @@ impl SensorData {
             })
             .collect::<Vec<f64>>();
 
-        if numbs.len() != self.all_points.len() {
-            self.all_points.push(vec![]);
+        if numbs.len() > self.all_points.len() {
+            self.all_points.push((vec![], vec![]));
         }
 
-        for (i, numb) in numbs.iter().enumerate() {
-            let points = self.all_points.get_mut(i).unwrap();
-            points.push([t_win, *numb]);
+        for (numb, points) in numbs.iter().zip(self.all_points.iter_mut()) {
+            points.0.push([t_win, *numb]);
+            if let Some(t_serial) = t_serial {
+                points.1.push([t_serial, *numb]);
+            } else {
+                points.1.push([0.0, *numb]);
+            }
+        }
+    }
+
+    pub fn reload(&mut self, linier_funcs: &Vec<Option<LinierFunc>>) {
+        self.all_parseds.clear();
+        self.all_points.clear();
+        for _ in 0..self.all_originals[0].len() {
+            self.all_points.push((vec![], vec![]));
+        }
+
+        for (original, (t_win, t_serial)) in self
+            .all_originals
+            .iter()
+            .zip(self.t_win.iter().zip(self.t_serial.iter()))
+        {
+            let parsed = Self::apply_linier(original, linier_funcs);
+            self.all_parseds.push(parsed.clone());
+            let numbs = parsed
+                .into_iter()
+                .filter(|v| matches!(v, Value::Number(_)))
+                .map(|v| match v {
+                    Value::Number(n) => n,
+                    _ => 0.0,
+                })
+                .collect::<Vec<f64>>();
+
+            for (numb, points) in numbs.iter().zip(self.all_points.iter_mut()) {
+                points.0.push([*t_win, *numb]);
+                points.1.push([*t_serial, *numb]);
+            }
         }
     }
 
@@ -65,6 +125,7 @@ impl SensorData {
         self.all_serials.clear();
         self.all_parseds.clear();
         self.all_points.clear();
+        self.all_originals.clear();
 
         self.t_win.clear();
         self.t_serial.clear();

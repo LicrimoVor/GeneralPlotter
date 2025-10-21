@@ -22,7 +22,7 @@ impl AppState {
 
         let mut serial = Serial::new();
         let (mut serial_rx, mut serial_tx) = serial.subscribe();
-        let mut logic = Logic::new(config.clone(), sensor_data.clone());
+        let mut logic = Logic::new(config.clone(), sensor_data.clone(), settings.clone());
         let ui = UserInterface::new(
             config.clone(),
             sensor_data.clone(),
@@ -33,21 +33,23 @@ impl AppState {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let settings_clone = settings.clone();
+            let settings = settings.clone();
+            let config = config.clone();
             std::thread::spawn(move || {
                 loop {
-                    sleep_ms(settings_clone.lock().unwrap().time_step_ms);
-                    run_logic(&mut logic, &mut serial_rx, &mut serial_tx);
+                    sleep_ms(settings.lock().unwrap().time_step_ms);
+                    run_logic(&mut logic, &config, &mut serial_rx, &mut serial_tx);
                 }
             });
         }
 
         #[cfg(target_arch = "wasm32")]
         {
+            let config = config.clone();
             wasm_bindgen_futures::spawn_local(async move {
                 loop {
                     sleep_ms(25).await;
-                    run_logic(&mut logic, &mut serial_rx, &mut serial_tx)
+                    run_logic(&mut logic, &config, &mut serial_rx, &mut serial_tx)
                 }
             });
         }

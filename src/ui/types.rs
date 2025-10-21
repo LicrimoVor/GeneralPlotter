@@ -24,5 +24,6 @@ impl UiData {
 
     pub fn clear(&mut self) {
         self.messages.clear();
+        self.is_reboot = true;
     }
 }

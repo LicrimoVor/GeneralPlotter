@@ -87,9 +87,9 @@ impl UserInterface {
         match event {
             SerialEvent::Opened(result) => match result {
                 Ok(true) => {
-                    // self.sensor_data.lock().unwrap().clear();
-                    // self.config.lock().unwrap().clear();
-                    // self.ui_data.lock().unwrap().clear();
+                    self.sensor_data.lock().unwrap().clear();
+                    self.config.lock().unwrap().clear();
+                    self.ui_data.lock().unwrap().clear();
                 }
                 _ => {}
             },

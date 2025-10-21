@@ -3,7 +3,7 @@ use crate::{
     libs::{message::Message, mpsc, print, serials::SerialAction},
     ui::{UiData, settings::Settings},
 };
-use egui::{Color32, Frame, Label, Margin, RichText, ScrollArea, TextEdit, TextStyle};
+use egui::{Frame, Margin, RichText, ScrollArea, Sense, TextEdit, TextStyle};
 use egui_extras::{Column, TableBuilder};
 use std::{
     cell::RefCell,
@@ -23,6 +23,7 @@ pub struct Terminal {
     input: String,
     // label_id, label_time, msg_text
     labels: Vec<(Option<TerminalLabel>, Option<TerminalLabel>, TerminalLabel)>,
+    count_cols: u8,
     rows: Vec<(
         Option<TerminalLabel>,
         Option<TerminalLabel>,
@@ -47,6 +48,7 @@ impl Terminal {
             input: String::new(),
             labels: Vec::new(),
             rows: Vec::new(),
+            count_cols: 0,
             last_len: 0,
         }
     }
@@ -62,6 +64,7 @@ impl Terminal {
             let iter: Box<dyn Iterator<Item = (usize, &Message)>> = if ui_data.is_reboot {
                 self.labels.clear();
                 self.rows.clear();
+                self.count_cols = 0;
                 Box::new(messages.iter().enumerate())
             } else {
                 Box::new(messages.iter().enumerate().skip(self.last_len))
@@ -80,7 +83,7 @@ impl Terminal {
                 } else {
                     None
                 };
-                let label_time = if settings.terminal.show_id {
+                let label_time = if settings.terminal.show_time {
                     Some(TerminalLabel {
                         text: RichText::new(format!("<{}> ", msg.get_created())).color(color),
                         selectable: settings.terminal.time_selectable,
@@ -88,15 +91,14 @@ impl Terminal {
                 } else {
                     None
                 };
-                let labels = msg
+                let cols: Vec<TerminalLabel> = msg
                     .text
-                    .split(settings.delimeter)
+                    .split(settings.delimiter)
                     .map(|text| TerminalLabel {
                         text: RichText::new(text.to_string()).color(color),
                         selectable: true,
                     })
                     .collect::<Vec<TerminalLabel>>();
-
                 self.labels.push((
                     label_id.clone(),
                     label_time.clone(),
@@ -105,7 +107,9 @@ impl Terminal {
                         selectable: true,
                     },
                 ));
-                self.rows.push((label_id, label_time, labels));
+
+                self.count_cols = self.count_cols.max(cols.len() as u8);
+                self.rows.push((label_id, label_time, cols));
             }
 
             self.last_len = messages.len();
@@ -114,8 +118,9 @@ impl Terminal {
 
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
         let height = ui.available_height();
+        let width = ui.available_width();
+        let settings_terminal = &self.settings.lock().unwrap().terminal;
         let row_height = ui.text_style_height(&TextStyle::Body);
-        let settings_terminal = self.settings.lock().unwrap().terminal;
         let count_msg = settings_terminal.count_msg as usize;
         let len_msg = self.labels.len();
         let count_max: usize = if count_msg == 0 {
@@ -124,17 +129,21 @@ impl Terminal {
             count_msg.min(len_msg)
         };
 
-        if !settings_terminal.mode_table {
-            Frame::group(ui.style())
-                .fill(ui.visuals().extreme_bg_color)
-                .stroke(ui.visuals().window_stroke)
-                .inner_margin(Margin::symmetric(8, 8))
-                .show(ui, |ui| {
-                    ScrollArea::vertical()
-                        .auto_shrink([false; 2])
-                        .stick_to_bottom(true)
-                        .max_height(height - 55.0)
-                        .show_rows(ui, row_height, count_max, |ui, row_range| {
+        Frame::group(ui.style())
+            .fill(ui.visuals().extreme_bg_color)
+            .stroke(ui.visuals().window_stroke)
+            .inner_margin(Margin::symmetric(8, 8))
+            .show(ui, |ui| {
+                ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .stick_to_bottom(true)
+                    .max_height(height - 64.0)
+                    .max_width(width)
+                    .show_rows(ui, row_height, count_max, |ui, row_range| {
+                        let width = ui.available_width();
+                        ui.set_width(width - 8.0);
+                        ui.set_max_width(width - 8.0);
+                        if !settings_terminal.mode_table {
                             for i in row_range {
                                 let index = len_msg - count_max + i;
                                 if index >= len_msg {
@@ -144,88 +153,73 @@ impl Terminal {
                                 let (label_id, label_time, msg) = self.labels.get(index).unwrap();
                                 ui.horizontal(|ui| {
                                     if label_id.is_some() {
-                                        ui.add(
-                                            Label::new(label_id.as_ref().unwrap().text.clone())
-                                                .selectable(label_id.as_ref().unwrap().selectable),
-                                        );
+                                        ui.add(label_id.as_ref().unwrap().to_label());
                                     }
                                     if label_time.is_some() {
-                                        ui.add(
-                                            Label::new(label_time.as_ref().unwrap().text.clone())
-                                                .selectable(
-                                                    label_time.as_ref().unwrap().selectable,
-                                                ),
-                                        );
+                                        ui.add(label_time.as_ref().unwrap().to_label());
                                     }
-                                    ui.add(Label::new(msg.text.clone()).selectable(msg.selectable));
+                                    ui.add(msg.to_label());
                                 });
                             }
-                        });
-                });
-        } else {
-            if len_msg == 0 {
-            } else {
-                ui.add_space(12.0);
-                let mut table = TableBuilder::new(ui)
-                    .striped(true)
-                    .resizable(true)
-                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                    .auto_shrink([false, false])
-                    .min_scrolled_height(0.0)
-                    .max_scroll_height(f32::INFINITY);
+                        } else {
+                            if len_msg == 0 {
+                            } else {
+                                let mut table = TableBuilder::new(ui)
+                                    .resizable(true)
+                                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                                    .auto_shrink([false, false])
+                                    .min_scrolled_height(0.0)
+                                    .sense(Sense::click())
+                                    .max_scroll_height(f32::INFINITY);
 
-                let mut labels: Vec<String> = vec![];
-                let last = self.rows.last().unwrap();
-                if last.0.is_some() {
-                    labels.push("ID".to_string());
-                    table = table.column(Column::auto());
-                }
-                if last.1.is_some() {
-                    labels.push("Время".to_string());
-                    table = table.column(Column::auto());
-                }
-                for i in 0..last.2.len() {
-                    labels.push(format!("Колонка {}", i + 1));
-                    table = table.column(Column::remainder());
-                }
-                table
-                    .header(20.0, |mut header| {
-                        for label in labels.iter() {
-                            header.col(|ui| {
-                                ui.label(RichText::new(label).strong());
-                            });
-                        }
-                    })
-                    .body(|mut body| {
-                        for (row, color) in rows.iter().zip(colors) {
-                            body.row(18.0, |mut table_row| {
-                                for (i, cell) in row.iter().enumerate() {
-                                    table_row.col(|ui| {
-                                        if (i == 0
-                                            && (settings.terminal.show_id
-                                                || settings.terminal.show_time))
-                                            || (i == 1 && settings.terminal.show_time)
-                                        {
-                                            let selectable =
-                                                if (i == 0) && settings.terminal.show_id {
-                                                    settings.terminal.id_selectable
-                                                } else {
-                                                    settings.terminal.time_selectable
-                                                };
-                                            ui.add(
-                                                Label::new(RichText::new(cell).color(color))
-                                                    .selectable(selectable),
-                                            );
-                                        } else {
-                                            ui.label(RichText::new(cell.clone()).color(color));
-                                        }
-                                    });
+                                let last = self.rows.last().unwrap();
+                                if last.0.is_some() {
+                                    table = table.column(Column::auto());
                                 }
-                            });
+                                if last.1.is_some() {
+                                    table = table.column(Column::auto());
+                                }
+                                for _ in 0..self.count_cols {
+                                    table = table.column(Column::remainder());
+                                }
+                                table.body(|mut body| {
+                                    for i in row_range {
+                                        let index = len_msg - count_max + i;
+                                        if index >= len_msg {
+                                            print::print("index >= len_msg");
+                                            break;
+                                        }
+                                        let (col_id, col_time, cols) =
+                                            self.rows.get(index).unwrap();
+
+                                        body.row(row_height, |mut table_row| {
+                                            if col_id.is_some() {
+                                                table_row.col(|ui| {
+                                                    ui.add(col_id.as_ref().unwrap().to_label());
+                                                });
+                                            }
+                                            if col_time.is_some() {
+                                                table_row.col(|ui| {
+                                                    ui.add(col_time.as_ref().unwrap().to_label());
+                                                });
+                                            }
+                                            for col in cols {
+                                                table_row.col(|ui| {
+                                                    ui.add(col.to_label());
+                                                });
+                                            }
+                                            for _ in cols.len()..self.count_cols as usize {
+                                                table_row.col(|ui| {
+                                                    ui.label("--");
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                         }
                     });
-            }
-        }
+            });
 
         ui.separator();
 

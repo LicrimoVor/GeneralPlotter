@@ -3,8 +3,12 @@ use crate::libs::types::{LinierFunc, Value};
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct ConfigLogic {
-    pub linier_funcs: Vec<LinierFunc>,
+    pub linier_funcs: Vec<Option<LinierFunc>>,
     pub cols: Vec<Value>,
+    pub delimiter: char,
+
+    pub is_updated: bool,
+    pub is_reload: bool,
 }
 
 impl Default for ConfigLogic {
@@ -12,6 +16,10 @@ impl Default for ConfigLogic {
         Self {
             linier_funcs: Vec::new(),
             cols: Vec::new(),
+            delimiter: ';',
+
+            is_updated: false,
+            is_reload: false,
         }
     }
 }

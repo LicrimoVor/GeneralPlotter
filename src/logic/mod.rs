@@ -1,43 +1,47 @@
-mod extractor;
-mod logger;
+mod main;
 mod serializer;
-mod state;
-mod traits;
 mod types;
 
 pub mod config;
-pub use state::Logic;
+use std::sync::{Arc, Mutex};
+
+pub use main::Logic;
 pub use types::SensorData;
 
-use crate::libs::{
-    mpsc,
-    serials::{SerialAction, SerialEvent},
+use crate::{
+    libs::{
+        mpsc,
+        serials::{SerialAction, SerialEvent},
+    },
+    logic::config::ConfigLogic,
 };
 
 pub fn run_logic(
     logic: &mut Logic,
+    config: &Arc<Mutex<ConfigLogic>>,
     serial_rx: &mut mpsc::Receiver<SerialEvent>,
     serial_tx: &mut mpsc::Sender<SerialAction>,
 ) {
     let event = serial_rx.try_recv();
-    if event.is_none() {
-        return;
-    }
-
-    let event = event.unwrap();
-    match event {
-        SerialEvent::Data(result) => {
-            if let Ok(data) = result {
-                for val in data {
-                    logic.run(val.clone());
-                    // print(val.as_str());
+    if let Some(event) = event {
+        match event {
+            SerialEvent::Data(result) => {
+                if let Ok(data) = result {
+                    for val in data {
+                        logic.run(val.clone());
+                        // print(val.as_str());
+                    }
                 }
             }
-        }
-        SerialEvent::Opened(result) => match result {
-            Ok(true) => logic.init(),
+            SerialEvent::Opened(result) => match result {
+                Ok(true) => logic.init(),
+                _ => {}
+            },
             _ => {}
-        },
-        _ => {}
+        }
+    }
+
+    if config.lock().unwrap().is_reload {
+        logic.reload();
     }
 }
