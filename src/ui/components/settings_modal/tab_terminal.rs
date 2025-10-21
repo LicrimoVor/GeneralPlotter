@@ -1,13 +1,14 @@
-use crate::ui::settings::Settings;
+use crate::ui::{UiData, settings::Settings};
 use std::sync::{Arc, Mutex};
 
 pub struct TabTerminal {
     settings: Arc<Mutex<Settings>>,
+    ui_data: Arc<Mutex<UiData>>,
 }
 
 impl TabTerminal {
-    pub fn new(settings: Arc<Mutex<Settings>>) -> Self {
-        Self { settings }
+    pub fn new(settings: Arc<Mutex<Settings>>, ui_data: Arc<Mutex<UiData>>) -> Self {
+        Self { settings, ui_data }
     }
 
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
@@ -32,17 +33,23 @@ impl TabTerminal {
         ui.label("Типы сообщений:");
 
         ui.horizontal(|ui| {
-            ui.checkbox(&mut settings.show_msg_info, "Info");
+            if ui.checkbox(&mut settings.show_msg_info, "Info").clicked() {
+                self.ui_data.lock().unwrap().is_reboot = true;
+            };
             ui.color_edit_button_srgb(&mut settings.msg_info_color);
         });
 
         ui.horizontal(|ui| {
-            ui.checkbox(&mut settings.show_msg_error, "Error");
+            if ui.checkbox(&mut settings.show_msg_error, "Error").clicked() {
+                self.ui_data.lock().unwrap().is_reboot = true;
+            };
             ui.color_edit_button_srgb(&mut settings.msg_error_color);
         });
 
         ui.horizontal(|ui| {
-            ui.checkbox(&mut settings.show_msg_fetch, "Fetch");
+            if ui.checkbox(&mut settings.show_msg_fetch, "Fetch").clicked() {
+                self.ui_data.lock().unwrap().is_reboot = true;
+            };
             ui.color_edit_button_srgb(&mut settings.msg_fetch_color);
         });
     }

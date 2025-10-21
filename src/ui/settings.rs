@@ -12,7 +12,7 @@ pub struct Settings {
 
     pub terminal: SettingsTerminal,
 
-    pub _is_updated: bool,
+    pub is_updated: bool,
 }
 
 impl Settings {
@@ -23,7 +23,7 @@ impl Settings {
             Self {
                 delimeter: ';',
                 time_step_ms: 50,
-                _is_updated: false,
+                is_updated: false,
                 ..Settings::default()
             }
         }

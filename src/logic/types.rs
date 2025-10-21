@@ -1,9 +1,8 @@
 use crate::libs::types::Value;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-#[derive(Default)]
 pub struct SensorData {
     pub serial: Vec<String>,
     pub parsed: Vec<Value>,

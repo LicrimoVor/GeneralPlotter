@@ -63,7 +63,7 @@ impl UserInterface {
                 ui_data.clone(),
                 serial_tx.clone(),
             ),
-            left_panel: LeftPanel::new(settings.clone(), serial),
+            left_panel: LeftPanel::new(settings.clone(), ui_data.clone(), serial),
             right_panel: RightPanel::new(settings.clone(), config.clone()),
 
             _timer: Timer::new(50),
@@ -76,7 +76,8 @@ impl UserInterface {
         self.left_panel.update();
         self.right_panel.update();
 
-        self.settings.lock().unwrap()._is_updated = false;
+        self.settings.lock().unwrap().is_updated = false;
+        self.ui_data.lock().unwrap().is_reboot = false;
         let event = self.serial_rx.try_recv();
         if event.is_none() {
             return;

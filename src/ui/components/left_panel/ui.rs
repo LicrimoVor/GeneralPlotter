@@ -1,4 +1,5 @@
 use crate::libs::serials::Serial;
+use crate::ui::UiData;
 use crate::ui::{
     components::{config_port::ConfigPort, settings_modal::SettingsModal},
     settings::Settings,
@@ -7,6 +8,7 @@ use std::sync::{Arc, Mutex};
 
 pub struct LeftPanel {
     settings: Arc<Mutex<Settings>>,
+    ui_data: Arc<Mutex<UiData>>,
 
     // ui
     settings_modal: SettingsModal,
@@ -14,13 +16,19 @@ pub struct LeftPanel {
 }
 
 impl LeftPanel {
-    pub fn new(settings: Arc<Mutex<Settings>>, serial: &mut Serial) -> Self {
+    pub fn new(
+        settings: Arc<Mutex<Settings>>,
+        ui_data: Arc<Mutex<UiData>>,
+        serial: &mut Serial,
+    ) -> Self {
+        let _ = ui_data;
         let (serial_rx, serial_tx) = serial.subscribe();
 
         Self {
             settings: settings.clone(),
+            ui_data: ui_data.clone(),
 
-            settings_modal: SettingsModal::new(settings),
+            settings_modal: SettingsModal::new(settings, ui_data),
             config_port: ConfigPort::new(serial_rx, serial_tx),
         }
     }

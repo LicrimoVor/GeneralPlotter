@@ -1,8 +1,8 @@
 use crate::{
     libs::{svg_img::SvgImage, types::Theme},
     ui::{
-        components::settings_modal::tab_terminal::TabTerminal, libs::button_image::button_image_18,
-        settings::Settings,
+        UiData, components::settings_modal::tab_terminal::TabTerminal,
+        libs::button_image::button_image_18, settings::Settings,
     },
 };
 use egui::{Id, Modal, Vec2};
@@ -15,22 +15,24 @@ enum SettingsTab {
 }
 
 pub struct SettingsModal {
-    _is_open: bool,
     settings: Arc<Mutex<Settings>>,
-    active_tab: SettingsTab,
+    ui_data: Arc<Mutex<UiData>>,
 
     //ui
+    active_tab: SettingsTab,
     terminal: TabTerminal,
+    _is_open: bool,
 }
 
 impl SettingsModal {
-    pub fn new(settings: Arc<Mutex<Settings>>) -> Self {
+    pub fn new(settings: Arc<Mutex<Settings>>, ui_data: Arc<Mutex<UiData>>) -> Self {
         Self {
-            _is_open: false,
             settings: settings.clone(),
+            ui_data: ui_data.clone(),
 
             active_tab: SettingsTab::General,
-            terminal: TabTerminal::new(settings.clone()),
+            terminal: TabTerminal::new(settings.clone(), ui_data.clone()),
+            _is_open: false,
         }
     }
 }
