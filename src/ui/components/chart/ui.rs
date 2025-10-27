@@ -26,6 +26,7 @@ impl Chart {
 
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
         let is_time_serial = self.settings.lock().unwrap().is_time_serial;
+        let display = self.settings.lock().unwrap().chart.display.clone();
 
         let lines: Vec<Line> = self
             .all_points
@@ -45,7 +46,10 @@ impl Chart {
             // .default_x_bounds(0.0, 100.0)
             // .view_aspect(2.0)
             .show(ui, |plot_ui| {
-                for line in lines {
+                for (line, flag) in lines.into_iter().zip(display) {
+                    if !flag {
+                        continue;
+                    }
                     plot_ui.line(line);
                 }
             });

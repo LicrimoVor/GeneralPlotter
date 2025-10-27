@@ -78,6 +78,7 @@ impl UserInterface {
 
         self.settings.lock().unwrap().is_updated = false;
         self.ui_data.lock().unwrap().is_reboot = false;
+
         let event = self.serial_rx.try_recv();
         if event.is_none() {
             return;
