@@ -1,9 +1,7 @@
-use egui::{Align, DragValue, Layout};
-
-use crate::libs::print;
 use crate::libs::svg_img::SvgImage;
 use crate::ui::settings::Settings;
 use crate::{logic::config::ConfigLogic, ui::libs::button_image::button_image_18};
+use egui::DragValue;
 use std::sync::{Arc, Mutex};
 
 pub struct RightPanel {
@@ -30,6 +28,8 @@ impl RightPanel {
     pub fn update(&mut self) {}
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
         let mut config = self.config.lock().unwrap();
+        let mut settings = self.settings.lock().unwrap();
+
         if self.is_reload {
             config.is_reload = true;
             self.is_reload = false;
@@ -44,6 +44,7 @@ impl RightPanel {
             ui.checkbox(&mut self.is_linier_mode, "");
         });
 
+        let mut count = 0;
         for (i, linier) in config.linier_funcs.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 ui.set_height(32.0);
@@ -80,6 +81,9 @@ impl RightPanel {
                                 self.is_reload = true;
                             }
                         };
+
+                        ui.checkbox(&mut settings.chart.display[count], "");
+                        count += 1;
                     }
                     None => {
                         ui.label("Тип параметра - строка");

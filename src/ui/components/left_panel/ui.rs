@@ -1,9 +1,7 @@
+use super::{config_port::ConfigPort, description::Description, settings_modal::SettingsModal};
 use crate::libs::serials::Serial;
 use crate::ui::UiData;
-use crate::ui::{
-    components::{config_port::ConfigPort, settings_modal::SettingsModal},
-    settings::Settings,
-};
+use crate::ui::settings::Settings;
 use std::sync::{Arc, Mutex};
 
 pub struct LeftPanel {
@@ -13,6 +11,7 @@ pub struct LeftPanel {
     // ui
     settings_modal: SettingsModal,
     config_port: ConfigPort,
+    description: Description,
 }
 
 impl LeftPanel {
@@ -30,6 +29,7 @@ impl LeftPanel {
 
             settings_modal: SettingsModal::new(settings, ui_data),
             config_port: ConfigPort::new(serial_rx, serial_tx),
+            description: Description::new(),
         }
     }
 }
@@ -41,6 +41,7 @@ impl LeftPanel {
     }
     pub fn show(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         self.config_port.show(ctx, ui);
+        self.description.show(ctx, ui);
         self.settings_modal.show(ctx, ui);
     }
 }

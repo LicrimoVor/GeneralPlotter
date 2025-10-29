@@ -30,7 +30,6 @@ impl TabTerminal {
 
         ui.checkbox(&mut settings.time_selectable, "Выделение времени");
         ui.checkbox(&mut settings.id_selectable, "Выделение ID сообщения");
-
         ui.checkbox(&mut settings.show_separator, "Показывать разделитель");
 
         ui.separator();

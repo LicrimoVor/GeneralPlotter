@@ -1,4 +1,4 @@
-use super::super::{chart::Chart, terminal::Terminal};
+use super::{chart::Chart, terminal::Terminal};
 use crate::libs::mpsc;
 use crate::libs::serials::SerialAction;
 use crate::logic::config::ConfigLogic;
@@ -46,6 +46,14 @@ impl CentralPanel {
 
     pub fn update(&mut self) {
         // while let Ok(proxy_data) = self.state.proxy_data_rx.try_recv() {}
+        {
+            let mut settings = self.settings.lock().unwrap();
+            let sensor_data = self.sensor_data.lock().unwrap();
+            for _ in settings.chart.display.len()..sensor_data.all_points.len() {
+                settings.chart.display.push(true);
+            }
+        }
+
         self.chart.update();
         self.terminal.update();
     }

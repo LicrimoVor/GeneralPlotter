@@ -78,6 +78,8 @@ impl UserInterface {
 
         self.settings.lock().unwrap().is_updated = false;
         self.ui_data.lock().unwrap().is_reboot = false;
+        self.sensor_data.lock().unwrap().is_updated = false;
+        self.sensor_data.lock().unwrap().is_reload = false;
 
         let event = self.serial_rx.try_recv();
         if event.is_none() {
@@ -127,8 +129,8 @@ impl UserInterface {
 
         if width > 720.0 {
             egui::SidePanel::left("left")
-                .min_width(200.0)
-                .max_width(200.0)
+                .min_width(250.0)
+                .max_width(250.0)
                 .resizable(false)
                 .show(ctx, |ui| {
                     ui.add_space(8.0);
@@ -137,8 +139,8 @@ impl UserInterface {
         }
         if width > 1170.0 {
             egui::SidePanel::right("rigth")
-                .min_width(200.0)
-                .max_width(200.0)
+                .min_width(250.0)
+                .max_width(250.0)
                 .resizable(false)
                 .show(ctx, |ui| {
                     self.right_panel.show(ctx, ui);

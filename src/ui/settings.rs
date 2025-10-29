@@ -1,4 +1,6 @@
-use super::components::{chart::settings::SettingsChart, terminal::settings::SettingsTerminal};
+use super::components::central_panel::{
+    chart::settings::SettingsChart, terminal::settings::SettingsTerminal,
+};
 use crate::{core::consts::KEY_SETTINGS, libs::types::Theme};
 use serde::{Deserialize, Serialize};
 

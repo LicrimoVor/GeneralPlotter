@@ -15,6 +15,9 @@ pub struct SensorData {
     pub all_parseds: Vec<Vec<Value>>,
     // t_win value, t_serial value
     pub all_points: Vec<(Vec<[f64; 2]>, Vec<[f64; 2]>)>,
+
+    pub is_updated: bool,
+    pub is_reload: bool,
 }
 
 impl SensorData {
@@ -89,6 +92,8 @@ impl SensorData {
                 points.1.push([0.0, *numb]);
             }
         }
+
+        self.is_updated = true;
     }
 
     pub fn reload(&mut self, linier_funcs: &Vec<Option<LinierFunc>>) {
@@ -119,6 +124,7 @@ impl SensorData {
                 points.1.push([*t_serial, *numb]);
             }
         }
+        self.is_reload = true;
     }
 
     pub fn clear(&mut self) {
@@ -129,6 +135,7 @@ impl SensorData {
 
         self.t_win.clear();
         self.t_serial.clear();
+        self.is_reload = true;
     }
 
     // pub fn to_csv(&self) -> String {

@@ -12,6 +12,7 @@ pub fn gravity_dark_visuals() -> Visuals {
 
     let text_color = Color32::from_rgb(255, 245, 231);
     let text_contrast = Color32::from_rgb(235, 215, 211);
+    let text_invert = Color32::from_rgb(50, 40, 30);
 
     let bg_main = Color32::from_rgb(34, 29, 34);
     let bg_panel = Color32::from_rgb(45, 40, 46);

@@ -1,9 +1,7 @@
+use super::{tab_chart::TabChart, tab_terminal::TabTerminal};
 use crate::{
     libs::{svg_img::SvgImage, types::Theme},
-    ui::{
-        UiData, components::settings_modal::tab_terminal::TabTerminal,
-        libs::button_image::button_image_18, settings::Settings,
-    },
+    ui::{UiData, libs::button_image::button_image_18, settings::Settings},
 };
 use egui::{Id, Modal, TextEdit, Vec2};
 use std::sync::{Arc, Mutex};
@@ -12,6 +10,7 @@ use std::sync::{Arc, Mutex};
 enum SettingsTab {
     General,
     Terminal,
+    Chart,
 }
 
 pub struct SettingsModal {
@@ -21,8 +20,9 @@ pub struct SettingsModal {
     //ui
     active_tab: SettingsTab,
     terminal: TabTerminal,
-    _is_open: bool,
+    chart: TabChart,
 
+    _is_open: bool,
     _delimiter: String,
 }
 
@@ -34,6 +34,7 @@ impl SettingsModal {
 
             active_tab: SettingsTab::General,
             terminal: TabTerminal::new(settings.clone(), ui_data.clone()),
+            chart: TabChart::new(settings.clone(), ui_data.clone()),
 
             _is_open: false,
             _delimiter: settings.lock().unwrap().delimiter.to_string(),
@@ -61,6 +62,7 @@ impl SettingsModal {
                 // Вкладки
                 ui.selectable_value(&mut self.active_tab, SettingsTab::General, "Основные");
                 ui.selectable_value(&mut self.active_tab, SettingsTab::Terminal, "Терминал");
+                ui.selectable_value(&mut self.active_tab, SettingsTab::Chart, "График");
             });
 
             ui.separator();
@@ -86,9 +88,11 @@ impl SettingsModal {
                         ui_data.is_reboot = true;
                     }
                 }
-
                 SettingsTab::Terminal => {
                     self.terminal.show(ctx, ui);
+                }
+                SettingsTab::Chart => {
+                    self.chart.show(ctx, ui);
                 }
             }
         });

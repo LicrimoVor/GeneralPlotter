@@ -1,3 +1,4 @@
+mod tab_chart;
 mod tab_terminal;
 mod ui;
 
