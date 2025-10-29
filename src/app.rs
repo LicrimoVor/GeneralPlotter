@@ -77,7 +77,7 @@ impl App for AppState {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // ctx.request_repaint_after(std::time::Duration::from_millis(16));
+        ctx.request_repaint_after(std::time::Duration::from_millis(20));
         self.ui.run(ctx, _frame);
     }
 }

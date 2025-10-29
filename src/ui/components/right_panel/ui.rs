@@ -1,6 +1,9 @@
 use crate::libs::svg_img::SvgImage;
 use crate::ui::settings::Settings;
-use crate::{logic::config::ConfigLogic, ui::libs::button_image::button_image_18};
+use crate::{
+    logic::config::{Action, ConfigLogic},
+    ui::libs::button_image::button_image_18,
+};
 use egui::DragValue;
 use std::sync::{Arc, Mutex};
 
@@ -31,7 +34,7 @@ impl RightPanel {
         let mut settings = self.settings.lock().unwrap();
 
         if self.is_reload {
-            config.is_reload = true;
+            config.actions.push(Action::Reload);
             self.is_reload = false;
         }
 
@@ -39,57 +42,67 @@ impl RightPanel {
             ui.label("Линейные\nпреобразования");
             ui.add_space(24.0);
             if button_image_18(ui, SvgImage::RELOAD, None).clicked() {
-                config.is_reload = true;
+                config.actions.push(Action::Reload);
             }
             ui.checkbox(&mut self.is_linier_mode, "");
         });
 
         let mut count = 0;
-        for (i, linier) in config.linier_funcs.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                ui.set_height(32.0);
-                ui.label(format!("{}:", i));
+        egui::Grid::new("instructions")
+            .num_columns(4)
+            .striped(true)
+            .show(ui, |ui| {
+                for (i, linier) in config.linier_funcs.iter_mut().enumerate() {
+                    // ui.horizontal(|ui| {
+                    //     ui.set_height(32.0);
+                    ui.label(format!("{}:", i));
 
-                match linier {
-                    Some(linier_) => {
-                        if ui
-                            .add(
-                                DragValue::new(&mut linier_.alpha)
-                                    .speed(0.1)
-                                    .range(-100.0..=100.0)
-                                    .custom_formatter(|v, _| format!("{:05.2}", v))
-                                    .prefix("a="),
-                            )
-                            .changed()
-                        {
-                            if self.is_linier_mode {
-                                self.is_reload = true;
-                            }
-                        };
-                        ui.label(";");
-                        if ui
-                            .add(
-                                DragValue::new(&mut linier_.beta)
-                                    .speed(0.1)
-                                    .range(-100.0..=100.0)
-                                    .custom_formatter(|v, _| format!("{:05.2}", v))
-                                    .prefix("b="),
-                            )
-                            .changed()
-                        {
-                            if self.is_linier_mode {
-                                self.is_reload = true;
-                            }
-                        };
+                    match linier {
+                        Some(linier_) => {
+                            if ui
+                                .add(
+                                    DragValue::new(&mut linier_.alpha)
+                                        .speed(0.1)
+                                        .range(-100.0..=100.0)
+                                        .custom_formatter(|v, _| format!("{:05.2}", v))
+                                        .prefix("a="),
+                                )
+                                .changed()
+                            {
+                                if self.is_linier_mode {
+                                    self.is_reload = true;
+                                }
+                            };
+                            if ui
+                                .add(
+                                    DragValue::new(&mut linier_.beta)
+                                        .speed(0.1)
+                                        .range(-100.0..=100.0)
+                                        .custom_formatter(|v, _| format!("{:05.2}", v))
+                                        .prefix("b="),
+                                )
+                                .changed()
+                            {
+                                if self.is_linier_mode {
+                                    self.is_reload = true;
+                                }
+                            };
 
-                        ui.checkbox(&mut settings.chart.display[count], "");
-                        count += 1;
+                            while let None = settings.chart.display.get(count) {
+                                settings.chart.display.push(false);
+                            }
+                            ui.checkbox(&mut settings.chart.display[count], "");
+                            count += 1;
+                        }
+                        None => {
+                            ui.separator();
+                            ui.separator();
+                        }
                     }
-                    None => {
-                        ui.label("Тип параметра - строка");
-                    }
+
+                    ui.end_row();
+                    // });
                 }
             });
-        }
     }
 }

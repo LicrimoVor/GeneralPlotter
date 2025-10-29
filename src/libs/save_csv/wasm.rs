@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, HtmlElement, Url};
+use web_sys::{Blob, Url};
 
 #[wasm_bindgen]
 pub fn save_csv(filename: &str, content: &str) -> Result<(), JsValue> {
@@ -16,6 +16,7 @@ pub fn save_csv(filename: &str, content: &str) -> Result<(), JsValue> {
     let a = document
         .create_element("a")?
         .dyn_into::<web_sys::HtmlElement>()?;
+
     a.set_attribute("href", &url)?;
     a.set_attribute("download", filename)?;
     a.set_attribute("style", "display:none")?;

@@ -44,4 +44,8 @@ impl Settings {
             Self::default()
         }
     }
+
+    pub fn clear(&mut self) {
+        // self.chart.display.clear();
+    }
 }

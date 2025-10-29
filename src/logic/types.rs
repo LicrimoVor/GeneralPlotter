@@ -135,32 +135,34 @@ impl SensorData {
 
         self.t_win.clear();
         self.t_serial.clear();
+
+        self.serial.clear();
+        self.parsed.clear();
+
         self.is_reload = true;
     }
 
-    // pub fn to_csv(&self) -> String {
-    //     let mut csv = String::new();
-    //     csv.push_str("time_win;time_serial;all_serials;all_parseds\n");
+    pub fn to_csv(&self) -> String {
+        let mut csv = String::new();
+        csv.push_str("Время ОС;Время МК\n");
 
-    //     let len = self
-    //         .t_win
-    //         .len()
-    //         .min(self.t_serial.len())
-    //         .min(self.all_serials.len())
-    //         .min(self.all_parseds.len());
+        let len = self
+            .t_win
+            .len()
+            .min(self.t_serial.len())
+            .min(self.all_serials.len())
+            .min(self.all_parseds.len());
 
-    //     for i in 0..len {
-    //         let time_win = self.t_win[i];
-    //         let time_serial = self.t_serial[i];
+        for i in 0..len {
+            let time_win = self.t_win[i];
+            let time_serial = self.t_serial[i];
 
-    //         let serials_str = serde_json::to_string(&self.all_serials[i]).unwrap_or_default();
-    //         let parseds_str = serde_json::to_string(&self.all_parseds[i]).unwrap_or_default();
+            let serials_str = self.all_serials[i].join(";");
+            // let parseds_str = serde_json::to_string(&self.all_parseds[i]).unwrap_or_default();
 
-    //         csv.push_str(&format!(
-    //             "{time_win};{time_serial};{serials_str};{parseds_str}\n"
-    //         ));
-    //     }
+            csv.push_str(&format!("{time_win};{time_serial};{serials_str}\n"));
+        }
 
-    //     csv
-    // }
+        csv
+    }
 }

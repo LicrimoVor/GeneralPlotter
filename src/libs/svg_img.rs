@@ -13,6 +13,7 @@ pub enum SvgImage {
     PLUS,
     UP,
     DOWN,
+    SAVE,
     NONE,
 }
 
@@ -31,6 +32,7 @@ impl SvgImage {
             SvgImage::PLUS => egui::include_image!("../../assets/plus.svg"),
             SvgImage::UP => egui::include_image!("../../assets/up.svg"),
             SvgImage::DOWN => egui::include_image!("../../assets/down.svg"),
+            SvgImage::SAVE => egui::include_image!("../../assets/file-download.svg"),
             SvgImage::NONE => egui::include_image!("../../assets/none.svg"),
         }
     }

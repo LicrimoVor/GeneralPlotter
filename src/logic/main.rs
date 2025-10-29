@@ -42,9 +42,19 @@ impl Logic {
     }
 
     pub fn run(&mut self, data: String) {
-        let t_win = Utc::now().timestamp_millis() as f64 / 1000.0 - self.__t_start;
-        let t_serial = None;
         let (serial, original) = self.serializer.run(data);
+        let t_win = Utc::now().timestamp_millis() as f64 / 1000.0 - self.__t_start;
+        let t_serial = {
+            let time_serial_col = self.settings.lock().unwrap().time_serial_col;
+            let mut t_serial = None;
+            if original.len() > time_serial_col {
+                match original[time_serial_col] {
+                    Value::Number(n) => t_serial = Some(n),
+                    _ => (),
+                }
+            }
+            t_serial
+        };
 
         let parsed = {
             let mut config = self.config.lock().unwrap();
@@ -92,14 +102,11 @@ impl Logic {
     }
 
     pub fn reload(&mut self) {
-        let mut config = self.config.lock().unwrap();
-        if config.is_reload {
-            config.is_reload = false;
-            self.sensor_data
-                .lock()
-                .unwrap()
-                .reload(&config.linier_funcs);
-            self.settings.lock().unwrap().is_updated = true;
-        }
+        let config = self.config.lock().unwrap();
+        self.sensor_data
+            .lock()
+            .unwrap()
+            .reload(&config.linier_funcs);
+        self.settings.lock().unwrap().is_updated = true;
     }
 }

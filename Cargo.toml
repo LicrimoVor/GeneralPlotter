@@ -40,6 +40,7 @@ web-sys = { version = "0.3", features = [
     "WritableStreamDefaultWriter",
     "Navigator",
     "Window",
+    "Url",
     "console",
 ] }
 web-time = "1.1"

@@ -1,7 +1,7 @@
 use super::{chart::Chart, terminal::Terminal};
 use crate::libs::mpsc;
+use crate::libs::save_csv::save_csv;
 use crate::libs::serials::SerialAction;
-use crate::logic::config::ConfigLogic;
 use crate::ui::UiData;
 use crate::ui::libs::button_image::button_image_18;
 use crate::ui::settings::Settings;
@@ -81,12 +81,15 @@ impl CentralPanel {
             }
         }
 
-        egui::CentralPanel::default().show_inside(ui, |ui| {
-            self.terminal.show(ctx, ui);
-        });
+        let rect = egui::CentralPanel::default()
+            .show_inside(ui, |ui| {
+                self.terminal.show(ctx, ui);
+            })
+            .response
+            .rect;
 
         egui::Area::new(Id::new("chart_up"))
-            .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-225.0, 20.0))
+            .anchor(egui::Align2::RIGHT_TOP, egui::vec2(-210.0 - 24.0, 20.0))
             .show(ctx, |ui| {
                 let img = if self._collapsed_chart {
                     SvgImage::DOWN
@@ -96,6 +99,19 @@ impl CentralPanel {
                 if button_image_18(ui, img, None).clicked() {
                     self._collapsed_chart = !self._collapsed_chart;
                     self._is_min_height = true;
+                }
+            });
+        let mut y = rect.top() + 16.0;
+        if self._collapsed_chart {
+            y += 24.0;
+        }
+        let x = rect.right() - 40.0;
+        egui::Area::new(Id::new("save_data"))
+            .fixed_pos(egui::Pos2::new(x, y))
+            .show(ctx, |ui| {
+                if button_image_18(ui, SvgImage::SAVE, None).clicked() {
+                    let data_csv = self.sensor_data.lock().unwrap().to_csv();
+                    let _ = save_csv("Данные.csv", &data_csv);
                 }
             });
     }

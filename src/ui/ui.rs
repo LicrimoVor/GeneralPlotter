@@ -81,31 +81,28 @@ impl UserInterface {
         self.sensor_data.lock().unwrap().is_updated = false;
         self.sensor_data.lock().unwrap().is_reload = false;
 
-        let event = self.serial_rx.try_recv();
-        if event.is_none() {
-            return;
-        }
-
-        let event = event.unwrap();
-        match event {
-            SerialEvent::Opened(result) => match result {
-                Ok(true) => {
-                    self.sensor_data.lock().unwrap().clear();
-                    self.config.lock().unwrap().clear();
-                    self.ui_data.lock().unwrap().clear();
-                }
-                _ => {}
-            },
-            SerialEvent::Data(result) => match result {
-                Ok(data) => {
-                    let mut ui_data = self.ui_data.lock().unwrap();
-                    for val in data {
-                        ui_data.update(val);
+        while let Some(event) = self.serial_rx.try_recv() {
+            match event {
+                SerialEvent::Opened(result) => match result {
+                    Ok(true) => {
+                        self.sensor_data.lock().unwrap().clear();
+                        self.settings.lock().unwrap().clear();
+                        self.config.lock().unwrap().clear();
+                        self.ui_data.lock().unwrap().clear();
                     }
-                }
+                    _ => {}
+                },
+                SerialEvent::Data(result) => match result {
+                    Ok(data) => {
+                        let mut ui_data = self.ui_data.lock().unwrap();
+                        for val in data {
+                            ui_data.update(val);
+                        }
+                    }
+                    _ => {}
+                },
                 _ => {}
-            },
-            _ => {}
+            }
         }
     }
 
@@ -139,8 +136,8 @@ impl UserInterface {
         }
         if width > 1170.0 {
             egui::SidePanel::right("rigth")
-                .min_width(250.0)
-                .max_width(250.0)
+                .min_width(210.0)
+                .max_width(210.0)
                 .resizable(false)
                 .show(ctx, |ui| {
                     self.right_panel.show(ctx, ui);

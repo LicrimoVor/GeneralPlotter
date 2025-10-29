@@ -3,7 +3,7 @@ use crate::{
     libs::{svg_img::SvgImage, types::Theme},
     ui::{UiData, libs::button_image::button_image_18, settings::Settings},
 };
-use egui::{Id, Modal, TextEdit, Vec2};
+use egui::{DragValue, Id, Modal, TextEdit, Vec2};
 use std::sync::{Arc, Mutex};
 
 #[derive(PartialEq)]
@@ -72,16 +72,32 @@ impl SettingsModal {
                     let mut settings = self.settings.lock().unwrap();
                     let mut ui_data = self.ui_data.lock().unwrap();
                     ui.heading("Основные настройки");
-                    ui.label("Тема интерфейса:");
                     ui.horizontal(|ui| {
+                        ui.label("Тема интерфейса:");
                         ui.radio_value(&mut settings.theme, Theme::LIGTH, "Светлая");
                         ui.radio_value(&mut settings.theme, Theme::DARK, "Тёмная");
                     });
                     ui.horizontal(|ui| {
                         ui.label("Разделитель:");
-                        ui.add(TextEdit::singleline(&mut self._delimiter).char_limit(1));
-                        // ui.text_edit_singleline()
-                        // ui.
+                        ui.add(
+                            TextEdit::singleline(&mut self._delimiter)
+                                .char_limit(1)
+                                .desired_width(12.0),
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Столбец времени serial:");
+                        ui.add(
+                            DragValue::new(&mut settings.time_serial_col)
+                                .speed(1)
+                                .max_decimals(0)
+                                .min_decimals(0)
+                                .range(0..=20),
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Время ОС или serial:");
+                        ui.checkbox(&mut settings.is_time_serial, "");
                     });
                     if !self._delimiter.is_empty() {
                         settings.delimiter = self._delimiter.chars().next().unwrap();

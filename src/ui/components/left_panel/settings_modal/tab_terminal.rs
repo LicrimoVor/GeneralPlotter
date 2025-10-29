@@ -12,26 +12,31 @@ impl TabTerminal {
     }
 
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
-        ui.heading("Настройки терминала");
         let settings = &mut self.settings.lock().unwrap().terminal;
 
-        if ui
-            .checkbox(&mut settings.show_time, "Показывать время")
-            .clicked()
-        {
-            self.ui_data.lock().unwrap().is_reboot = true;
-        };
-        if ui
-            .checkbox(&mut settings.show_id, "Показывать ID сообщения")
-            .clicked()
-        {
-            self.ui_data.lock().unwrap().is_reboot = true;
-        };
+        ui.heading("Настройки терминала");
 
-        ui.checkbox(&mut settings.time_selectable, "Выделение времени");
-        ui.checkbox(&mut settings.id_selectable, "Выделение ID сообщения");
+        egui::Grid::new("instructions")
+            .num_columns(2)
+            .show(ui, |ui| {
+                if ui
+                    .checkbox(&mut settings.show_time, "Показывать время")
+                    .clicked()
+                {
+                    self.ui_data.lock().unwrap().is_reboot = true;
+                };
+                ui.checkbox(&mut settings.time_selectable, "Выделение времени");
+                ui.end_row();
+                if ui
+                    .checkbox(&mut settings.show_id, "Показывать ID сообщения")
+                    .clicked()
+                {
+                    self.ui_data.lock().unwrap().is_reboot = true;
+                };
+                ui.checkbox(&mut settings.id_selectable, "Выделение ID сообщения");
+            });
+
         ui.checkbox(&mut settings.show_separator, "Показывать разделитель");
-
         ui.separator();
         ui.label("Режимы:");
         ui.horizontal(|ui| {

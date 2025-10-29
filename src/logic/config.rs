@@ -1,25 +1,33 @@
 use crate::libs::types::{LinierFunc, Value};
 
+pub enum Action {
+    Reload,
+}
+
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub struct ConfigLogic {
-    pub linier_funcs: Vec<Option<LinierFunc>>,
     pub cols: Vec<Value>,
+
+    #[serde(skip)]
+    pub actions: Vec<Action>,
+
+    pub linier_funcs: Vec<Option<LinierFunc>>,
     pub delimiter: char,
 
     pub is_updated: bool,
-    pub is_reload: bool,
 }
 
 impl Default for ConfigLogic {
     fn default() -> Self {
         Self {
-            linier_funcs: Vec::new(),
             cols: Vec::new(),
+            actions: vec![],
+
+            linier_funcs: Vec::new(),
             delimiter: ';',
 
             is_updated: false,
-            is_reload: false,
         }
     }
 }

@@ -1,11 +1,9 @@
+pub mod config;
 mod main;
 mod serializer;
 mod types;
-
-pub mod config;
-use std::sync::{Arc, Mutex};
-
 pub use main::Logic;
+use std::sync::{Arc, Mutex};
 pub use types::SensorData;
 
 use crate::{
@@ -41,7 +39,11 @@ pub fn run_logic(
         }
     }
 
-    if config.lock().unwrap().is_reload {
-        logic.reload();
+    while let Some(action) = config.lock().unwrap().actions.pop() {
+        match action {
+            config::Action::Reload => {
+                logic.reload();
+            }
+        }
     }
 }
