@@ -1,10 +1,11 @@
 use crate::libs::types::{LinierFunc, Value};
 
+#[derive(Clone, Debug)]
 pub enum Action {
     Reload,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 #[serde(default)]
 pub struct ConfigLogic {
     pub cols: Vec<Value>,

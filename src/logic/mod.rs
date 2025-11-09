@@ -39,10 +39,13 @@ pub fn run_logic(
         }
     }
 
-    while let Some(action) = config.lock().unwrap().actions.pop() {
-        match action {
-            config::Action::Reload => {
-                logic.reload();
+    {
+        let mut config = config.lock().unwrap();
+        while let Some(action) = config.actions.pop() {
+            match action {
+                config::Action::Reload => {
+                    logic.reload(config.clone());
+                }
             }
         }
     }

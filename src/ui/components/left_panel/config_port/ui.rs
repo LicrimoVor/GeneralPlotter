@@ -1,4 +1,7 @@
-use crate::libs::serials::{BaudRate, SerialAction, SerialDevice, SerialEvent};
+use crate::libs::{
+    serials::{BaudRate, SerialAction, SerialDevice, SerialEvent},
+    timer::Timer,
+};
 use crate::ui::libs::button_image::button_image_18;
 use crate::{
     libs::{mpsc, svg_img::SvgImage},
@@ -17,6 +20,7 @@ pub struct ConfigPort {
     serial_tx: mpsc::Sender<SerialAction>,
 
     _angle_loader: f32,
+    _timer: Timer,
 }
 
 impl ConfigPort {
@@ -35,6 +39,7 @@ impl ConfigPort {
             serial_tx,
 
             _angle_loader: 0.0,
+            _timer: Timer::new(15_000),
         };
         panel.update_ports();
         panel
@@ -48,7 +53,9 @@ impl ConfigPort {
 
     pub fn update(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
-        self.update_ports();
+        if self._timer.is_pass_iterval() {
+            self.update_ports();
+        }
     }
 
     fn serial_read(&mut self) {

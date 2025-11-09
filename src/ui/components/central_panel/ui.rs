@@ -110,7 +110,8 @@ impl CentralPanel {
             .fixed_pos(egui::Pos2::new(x, y))
             .show(ctx, |ui| {
                 if button_image_18(ui, SvgImage::SAVE, None).clicked() {
-                    let data_csv = self.sensor_data.lock().unwrap().to_csv();
+                    let separator = self.settings.lock().unwrap().separator;
+                    let data_csv = self.sensor_data.lock().unwrap().to_csv(Some(separator));
                     let _ = save_csv("Данные.csv", &data_csv);
                 }
             });

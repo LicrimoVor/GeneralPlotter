@@ -101,12 +101,10 @@ impl Logic {
             .add_data(serial, original, parsed, t_win, t_serial);
     }
 
-    pub fn reload(&mut self) {
-        let config = self.config.lock().unwrap();
-        self.sensor_data
-            .lock()
-            .unwrap()
-            .reload(&config.linier_funcs);
+    pub fn reload(&mut self, config: ConfigLogic) {
+        let mut sensor_data = self.sensor_data.lock().unwrap();
+        sensor_data.reload(&config.linier_funcs);
+
         self.settings.lock().unwrap().is_updated = true;
     }
 }

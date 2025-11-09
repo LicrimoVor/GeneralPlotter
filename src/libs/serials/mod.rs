@@ -96,17 +96,18 @@ impl Serial {
                         continue;
                     }
 
-                    self.send_event(SerialEvent::Loading(Ok(true)));
                     let result = match action.unwrap() {
                         SerialAction::UpdatePorts => self.update_ports(),
                         SerialAction::OpenPort((port, baud_rate)) => {
-                            self.open_port(port.id, baud_rate)
+                            self.send_event(SerialEvent::Loading(Ok(true)));
+                            let res = self.open_port(port.id, baud_rate);
+                            self.send_event(SerialEvent::Loading(Ok(false)));
+                            res
                         }
                         SerialAction::ClosePort => self.close_port(),
                         SerialAction::SendData(data) => self.send_data(data.as_bytes()),
                     };
                     self.send_event(result);
-                    self.send_event(SerialEvent::Loading(Ok(false)));
                 }
 
                 if self.is_opened() {

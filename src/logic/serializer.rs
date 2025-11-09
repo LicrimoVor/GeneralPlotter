@@ -22,10 +22,12 @@ impl Serializer {
 
         let parsed = serial
             .iter()
-            .map(|val| match val.parse::<f64>() {
-                Ok(numb) => Value::Number(numb),
-                _ => Value::Text(val.clone()),
-            })
+            .map(
+                |val| match val.replace(" ", ".").replace(",", ".").parse::<f64>() {
+                    Ok(numb) => Value::Number(numb),
+                    _ => Value::Text(val.clone()),
+                },
+            )
             .collect::<Vec<Value>>();
 
         (serial, parsed)

@@ -30,11 +30,8 @@ impl RightPanel {
 impl RightPanel {
     pub fn update(&mut self) {}
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
-        let mut config = self.config.lock().unwrap();
-        let mut settings = self.settings.lock().unwrap();
-
         if self.is_reload {
-            config.actions.push(Action::Reload);
+            self.config.lock().unwrap().actions.push(Action::Reload);
             self.is_reload = false;
         }
 
@@ -42,7 +39,7 @@ impl RightPanel {
             ui.label("Линейные\nпреобразования");
             ui.add_space(24.0);
             if button_image_18(ui, SvgImage::RELOAD, None).clicked() {
-                config.actions.push(Action::Reload);
+                self.config.lock().unwrap().actions.push(Action::Reload);
             }
             ui.checkbox(&mut self.is_linier_mode, "");
         });
@@ -52,7 +49,14 @@ impl RightPanel {
             .num_columns(4)
             .striped(true)
             .show(ui, |ui| {
-                for (i, linier) in config.linier_funcs.iter_mut().enumerate() {
+                for (i, linier) in self
+                    .config
+                    .lock()
+                    .unwrap()
+                    .linier_funcs
+                    .iter_mut()
+                    .enumerate()
+                {
                     // ui.horizontal(|ui| {
                     //     ui.set_height(32.0);
                     ui.label(format!("{}:", i));
@@ -88,6 +92,7 @@ impl RightPanel {
                                 }
                             };
 
+                            let mut settings = self.settings.lock().unwrap();
                             while let None = settings.chart.display.get(count) {
                                 settings.chart.display.push(false);
                             }

@@ -1,4 +1,5 @@
 use crate::libs::types::{LinierFunc, Value};
+use egui::Separator;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
@@ -142,8 +143,9 @@ impl SensorData {
         self.is_reload = true;
     }
 
-    pub fn to_csv(&self) -> String {
+    pub fn to_csv(&self, separator: Option<char>) -> String {
         let mut csv = String::new();
+        let separator = separator.unwrap_or('.').to_string();
         csv.push_str("Время ОС;Время МК\n");
 
         let len = self
@@ -153,12 +155,21 @@ impl SensorData {
             .min(self.all_serials.len())
             .min(self.all_parseds.len());
 
-        for i in 0..len {
-            let time_win = self.t_win[i];
-            let time_serial = self.t_serial[i];
+        let float2str = |f: f64| f.to_string().replace(".", &separator);
 
-            let serials_str = self.all_serials[i].join(";");
-            // let parseds_str = serde_json::to_string(&self.all_parseds[i]).unwrap_or_default();
+        for i in 0..len {
+            let time_win = float2str(self.t_win[i]);
+            let time_serial = float2str(self.t_serial[i]);
+
+            // let serials_str = self.all_serials[i].join(";");
+            let serials_str = self.all_originals[i]
+                .iter()
+                .map(|v| match v {
+                    Value::Number(n) => float2str(*n),
+                    Value::Text(s) => s.clone(),
+                })
+                .collect::<Vec<String>>()
+                .join(";");
 
             csv.push_str(&format!("{time_win};{time_serial};{serials_str}\n"));
         }

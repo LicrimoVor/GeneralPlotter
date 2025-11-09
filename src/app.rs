@@ -33,11 +33,10 @@ impl AppState {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let settings = settings.clone();
             let config = config.clone();
             std::thread::spawn(move || {
                 loop {
-                    sleep_ms(settings.lock().unwrap().time_step_ms);
+                    sleep_ms(25);
                     run_logic(&mut logic, &config, &mut serial_rx, &mut serial_tx);
                 }
             });

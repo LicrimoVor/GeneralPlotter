@@ -1,12 +1,18 @@
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, Url};
+use web_sys::{Blob, BlobPropertyBag, Url};
 
 #[wasm_bindgen]
 pub fn save_csv(filename: &str, content: &str) -> Result<(), JsValue> {
     // 1. Создаём Blob из данных
+    let content_with_bom = format!("\u{FEFF}{}", content);
+
     let parts = js_sys::Array::new();
-    parts.push(&JsValue::from_str(content));
-    let blob = Blob::new_with_str_sequence(&parts)?;
+    parts.push(&JsValue::from_str(&content_with_bom));
+
+    let options = BlobPropertyBag::new();
+    options.set_type("text/csv;charset=utf-8");
+
+    let blob = Blob::new_with_str_sequence_and_options(&parts, &options)?;
 
     // 2. Создаём URL для Blob
     let url = Url::create_object_url_with_blob(&blob)?;

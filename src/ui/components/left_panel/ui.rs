@@ -5,9 +5,6 @@ use crate::ui::settings::Settings;
 use std::sync::{Arc, Mutex};
 
 pub struct LeftPanel {
-    settings: Arc<Mutex<Settings>>,
-    ui_data: Arc<Mutex<UiData>>,
-
     // ui
     settings_modal: SettingsModal,
     config_port: ConfigPort,
@@ -24,9 +21,6 @@ impl LeftPanel {
         let (serial_rx, serial_tx) = serial.subscribe();
 
         Self {
-            settings: settings.clone(),
-            ui_data: ui_data.clone(),
-
             settings_modal: SettingsModal::new(settings, ui_data),
             config_port: ConfigPort::new(serial_rx, serial_tx),
             description: Description::new(),

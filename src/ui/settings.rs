@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 pub struct Settings {
     pub theme: Theme,
     pub delimiter: char,
+    pub separator: char,
+
     pub time_step_ms: i32,
     pub is_time_serial: bool,
     pub time_serial_col: usize,
@@ -24,6 +26,8 @@ impl Default for Settings {
         Self {
             theme: Theme::DARK,
             delimiter: ';',
+            separator: ',',
+
             time_step_ms: 50,
             is_time_serial: false,
             time_serial_col: 0,

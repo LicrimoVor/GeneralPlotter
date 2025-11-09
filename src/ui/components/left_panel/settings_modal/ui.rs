@@ -24,10 +24,15 @@ pub struct SettingsModal {
 
     _is_open: bool,
     _delimiter: String,
+    _separator: char,
 }
 
 impl SettingsModal {
     pub fn new(settings: Arc<Mutex<Settings>>, ui_data: Arc<Mutex<UiData>>) -> Self {
+        let (delimiter, separator) = {
+            let settings = settings.lock().unwrap();
+            (settings.delimiter.to_string(), settings.separator)
+        };
         Self {
             settings: settings.clone(),
             ui_data: ui_data.clone(),
@@ -37,7 +42,8 @@ impl SettingsModal {
             chart: TabChart::new(settings.clone(), ui_data.clone()),
 
             _is_open: false,
-            _delimiter: settings.lock().unwrap().delimiter.to_string(),
+            _delimiter: delimiter,
+            _separator: separator,
         }
     }
 }
@@ -77,13 +83,22 @@ impl SettingsModal {
                         ui.radio_value(&mut settings.theme, Theme::LIGTH, "Светлая");
                         ui.radio_value(&mut settings.theme, Theme::DARK, "Тёмная");
                     });
+                    ui.label("Разделитель");
                     ui.horizontal(|ui| {
-                        ui.label("Разделитель:");
+                        ui.label("данных:");
                         ui.add(
                             TextEdit::singleline(&mut self._delimiter)
                                 .char_limit(1)
                                 .desired_width(12.0),
                         );
+
+                        ui.label("целой части:");
+
+                        ui.horizontal(|ui| {
+                            ui.radio_value(&mut settings.separator, ',', "3,14");
+                            ui.radio_value(&mut settings.separator, '.', "3.14");
+                            ui.radio_value(&mut settings.separator, ' ', "3 14");
+                        });
                     });
                     ui.horizontal(|ui| {
                         ui.label("Столбец времени serial:");

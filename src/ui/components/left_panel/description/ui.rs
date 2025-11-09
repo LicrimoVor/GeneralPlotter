@@ -7,7 +7,6 @@ impl Description {
 }
 
 impl Description {
-    pub fn update(&mut self) {}
     pub fn show(&mut self, _: &egui::Context, ui: &mut egui::Ui) {
         ui.collapsing("Инструкция", |ui| {
             egui::Grid::new("instructions")
@@ -66,7 +65,7 @@ impl Description {
                     ui.label("Right-drag");
                     ui.end_row();
 
-                    ui.label("Сбос");
+                    ui.label("Сброс");
                     ui.label("Double-click");
                     ui.end_row();
                 });
