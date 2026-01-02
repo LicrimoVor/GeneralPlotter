@@ -7,7 +7,7 @@ use crate::logic::config::ConfigLogic;
 use crate::{
     libs::{
         mpsc,
-        serials::{Serial, SerialAction, SerialEvent},
+        serial::{Serial, SerialAction, SerialEvent},
         types::Theme,
     },
     logic::SensorData,

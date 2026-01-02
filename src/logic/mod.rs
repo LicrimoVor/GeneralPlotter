@@ -9,7 +9,7 @@ pub use types::SensorData;
 use crate::{
     libs::{
         mpsc,
-        serials::{SerialAction, SerialEvent},
+        serial::{SerialAction, SerialEvent},
     },
     logic::config::ConfigLogic,
 };

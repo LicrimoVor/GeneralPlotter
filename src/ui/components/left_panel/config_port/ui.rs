@@ -1,5 +1,5 @@
 use crate::libs::{
-    serials::{BaudRate, SerialAction, SerialDevice, SerialEvent},
+    serial::{BaudRate, SerialAction, SerialDevice, SerialEvent},
     timer::Timer,
 };
 use crate::ui::libs::button_image::button_image_18;

@@ -1,7 +1,7 @@
 use super::{chart::Chart, terminal::Terminal};
 use crate::libs::mpsc;
 use crate::libs::save_csv::save_csv;
-use crate::libs::serials::SerialAction;
+use crate::libs::serial::SerialAction;
 use crate::ui::UiData;
 use crate::ui::libs::button_image::button_image_18;
 use crate::ui::settings::Settings;

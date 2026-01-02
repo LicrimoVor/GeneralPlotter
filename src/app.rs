@@ -1,4 +1,5 @@
-use crate::libs::{serials::Serial, sleep::sleep_ms};
+use crate::extractor::serial::Serial;
+use crate::libs::sleep::sleep_ms;
 use crate::logic::{Logic, SensorData, config::ConfigLogic, run_logic};
 use crate::ui::UiData;
 use crate::ui::{UserInterface, settings::Settings};

@@ -2,10 +2,7 @@ use super::SensorData;
 use super::config::ConfigLogic;
 use super::serializer::Serializer;
 use crate::{
-    libs::{
-        print,
-        types::{LinierFunc, Value},
-    },
+    libs::types::{LinierFunc, Value},
     ui::settings::Settings,
 };
 use chrono::Utc;

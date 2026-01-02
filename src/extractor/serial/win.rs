@@ -1,6 +1,3 @@
-use super::{Serial, SerialDevice, SerialEvent};
-use crate::libs::serials::BaudRate;
-
 #[cfg(not(target_arch = "wasm32"))]
 pub mod desktop_impl {
     use super::*;

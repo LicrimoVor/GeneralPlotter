@@ -1,6 +1,6 @@
 use super::types::TerminalLabel;
 use crate::{
-    libs::{message::Message, mpsc, print, serials::SerialAction},
+    libs::{message::Message, mpsc, print, serial::SerialAction},
     ui::{UiData, settings::Settings},
 };
 use egui::{Frame, Margin, RichText, ScrollArea, Sense, TextEdit, TextStyle};

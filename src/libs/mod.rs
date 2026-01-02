@@ -2,7 +2,6 @@ pub mod message;
 pub mod mpsc;
 pub mod print;
 pub mod save_csv;
-pub mod serials;
 pub mod sleep;
 pub mod svg_img;
 pub mod timer;

@@ -1,7 +1,6 @@
 use super::{config_port::ConfigPort, description::Description, settings_modal::SettingsModal};
-use crate::libs::serials::Serial;
-use crate::ui::UiData;
 use crate::ui::settings::Settings;
+use crate::{extractor::serial::Serial, ui::UiData};
 use std::sync::{Arc, Mutex};
 
 pub struct LeftPanel {

@@ -5,6 +5,7 @@ use eframe::egui;
 
 mod app;
 mod core;
+mod extractor;
 mod libs;
 mod logic;
 mod ui;
